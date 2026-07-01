@@ -35,6 +35,10 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;height:100%}
+  /* iOS standalone doesn't extend the web view into the bottom home-indicator strip;
+     that strip shows the ROOT (html) background. Paint it the tab-bar colour so the
+     bar reads as continuous to the physical edge (no gap), while labels stay low. */
+  html{background:var(--card)}
   body{
     font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     background:var(--bg); color:var(--text);
@@ -187,7 +191,7 @@
 const START_ISO="2026-07-01";        // Wed — plan day 1
 const RACE_ISO ="2026-09-20";        // Sun — marathon
 const PLAN_LEN = 82;                 // day-indices 0..81 inclusive
-const APP_VERSION = "v6";            // bump on each deploy; shown at the bottom of Today
+const APP_VERSION = "v7";            // bump on each deploy; shown at the bottom of Today
 
 const PACE={ easy:"6:30–7:00/km", mp:"6:00–6:15/km (target 6:10)", race:"6:00–6:10/km" };
 // day kinds: strength | strengthLight | core | run | longrun | rest | race21 | race42
@@ -714,7 +718,7 @@ if(navigator.storage&&navigator.storage.persist){navigator.storage.persist();}
     var tb=document.getElementById("tabbar").getBoundingClientRect();
     var vv=window.visualViewport;
     box.textContent=
-      "DIAGNOSTIC (build v6)\n"+
+      "DIAGNOSTIC (build "+APP_VERSION+")\n"+
       "safe-area-bottom = "+sab+" px\n"+
       "window.innerHeight = "+window.innerHeight+"\n"+
       "documentEl.clientH = "+document.documentElement.clientHeight+"\n"+
