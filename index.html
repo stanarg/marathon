@@ -38,7 +38,7 @@
   /* iOS standalone doesn't extend the web view into the bottom home-indicator strip;
      that strip shows the ROOT (html) background. Paint it the tab-bar colour so the
      bar reads as continuous to the physical edge (no gap), while labels stay low. */
-  html{background:var(--card)}
+  html{background:#39ff14}   /* TEMP diagnostic: bright lime to find what fills the bottom strip */
   body{
     font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     background:var(--bg); color:var(--text);
@@ -191,7 +191,7 @@
 const START_ISO="2026-07-01";        // Wed — plan day 1
 const RACE_ISO ="2026-09-20";        // Sun — marathon
 const PLAN_LEN = 82;                 // day-indices 0..81 inclusive
-const APP_VERSION = "v7";            // bump on each deploy; shown at the bottom of Today
+const APP_VERSION = "v8";            // bump on each deploy; shown at the bottom of Today
 
 const PACE={ easy:"6:30–7:00/km", mp:"6:00–6:15/km (target 6:10)", race:"6:00–6:10/km" };
 // day kinds: strength | strengthLight | core | run | longrun | rest | race21 | race42
@@ -720,11 +720,12 @@ if(navigator.storage&&navigator.storage.persist){navigator.storage.persist();}
     box.textContent=
       "DIAGNOSTIC (build "+APP_VERSION+")\n"+
       "safe-area-bottom = "+sab+" px\n"+
-      "window.innerHeight = "+window.innerHeight+"\n"+
-      "documentEl.clientH = "+document.documentElement.clientHeight+"\n"+
-      "visualVP.height = "+(vv?Math.round(vv.height):"n/a")+"\n"+
-      "tabbar.bottom = "+Math.round(tb.bottom)+" , height = "+Math.round(tb.height)+"\n"+
-      "GAP below tabbar = "+Math.round(window.innerHeight-tb.bottom)+" px";
+      "innerH="+window.innerHeight+"  screenH="+screen.height+"\n"+
+      "docEl.clientH="+document.documentElement.clientHeight+"  vvH="+(vv?Math.round(vv.height):"n/a")+"\n"+
+      "tabbar.bottom="+Math.round(tb.bottom)+"\n"+
+      "htmlBg="+getComputedStyle(document.documentElement).backgroundColor+"\n"+
+      "bodyBg="+getComputedStyle(document.body).backgroundColor+"\n"+
+      "→ Is the strip BELOW the bar LIME GREEN?";
   }
   setTimeout(upd,350);
   if(window.visualViewport){window.visualViewport.addEventListener("resize",upd);}
