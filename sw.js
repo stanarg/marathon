@@ -5,7 +5,7 @@
      it falls back to the cached copy.
    - Static assets (icons, manifest) are CACHE-FIRST: fast, and they rarely change.
    Bump CACHE to force a full refresh of the cached shell. */
-const CACHE = "ba-marathon-v9";
+const CACHE = "ba-marathon-v10";
 const SHELL = [
   "./",
   "index.html",

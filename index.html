@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BA Marathon</title>
 <meta name="description" content="Personal Buenos Aires Marathon training & nutrition companion">
 <meta name="theme-color" content="#e4572e">
@@ -10,7 +10,7 @@
 <!-- iOS standalone / home-screen -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="BA Marathon">
 <link rel="apple-touch-icon" href="icon-180.png">
 <style>
@@ -34,11 +34,7 @@
     }
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;padding:0;height:100%}
-  /* iOS standalone doesn't extend the web view into the bottom home-indicator strip;
-     that strip shows the ROOT (html) background. Paint it the tab-bar colour so the
-     bar reads as continuous to the physical edge (no gap), while labels stay low. */
-  html{background:var(--card)}
+  html,body{margin:0;padding:0}
   body{
     font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     background:var(--bg); color:var(--text);
@@ -191,7 +187,7 @@
 const START_ISO="2026-07-01";        // Wed — plan day 1
 const RACE_ISO ="2026-09-20";        // Sun — marathon
 const PLAN_LEN = 82;                 // day-indices 0..81 inclusive
-const APP_VERSION = "v9";            // bump on each deploy; shown at the bottom of Today
+const APP_VERSION = "v10";           // bump on each deploy; shown at the bottom of Today
 
 const PACE={ easy:"6:30–7:00/km", mp:"6:00–6:15/km (target 6:10)", race:"6:00–6:10/km" };
 // day kinds: strength | strengthLight | core | run | longrun | rest | race21 | race42
