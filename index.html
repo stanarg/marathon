@@ -37,7 +37,7 @@
   html,body{margin:0;padding:0}
   body{
     font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:var(--bg); color:var(--text);
+    background:var(--card); color:var(--text);   /* base/canvas = bar colour, so the bottom strip matches the tab bar */
     -webkit-font-smoothing:antialiased; overscroll-behavior-y:none;
   }
   /* ---- Top bar ---- */
@@ -54,6 +54,7 @@
   #view{
     position:absolute;top:0;left:0;right:0;bottom:0;
     padding:calc(var(--topH) + 8px) 14px calc(var(--tabH) + 20px);
+    background:var(--bg);   /* keep the grey page look behind the cards */
     overflow-y:auto; -webkit-overflow-scrolling:touch;
   }
   /* ---- Tab bar ---- */
@@ -187,7 +188,7 @@
 const START_ISO="2026-07-01";        // Wed — plan day 1
 const RACE_ISO ="2026-09-20";        // Sun — marathon
 const PLAN_LEN = 82;                 // day-indices 0..81 inclusive
-const APP_VERSION = "v10";           // bump on each deploy; shown at the bottom of Today
+const APP_VERSION = "v11";           // bump on each deploy; shown at the bottom of Today
 
 const PACE={ easy:"6:30–7:00/km", mp:"6:00–6:15/km (target 6:10)", race:"6:00–6:10/km" };
 // day kinds: strength | strengthLight | core | run | longrun | rest | race21 | race42
@@ -709,10 +710,6 @@ if(navigator.storage&&navigator.storage.persist){navigator.storage.persist();}
   var box=document.createElement("div");
   box.style.cssText="position:fixed;left:6px;right:6px;bottom:64px;z-index:99999;background:#111;color:#4ade80;font:600 12px/1.45 ui-monospace,Menlo,monospace;padding:9px 11px;border-radius:8px;white-space:pre;box-shadow:0 3px 10px rgba(0,0,0,.45)";
   document.body.appendChild(box);
-  // CYAN probe: pushed 40px BELOW the viewport bottom — if it shows under the bar, we CAN render into the strip
-  var probe2=document.createElement("div");
-  probe2.style.cssText="position:fixed;left:0;right:0;bottom:-40px;height:90px;background:#00e5ff;z-index:1;pointer-events:none";
-  document.body.appendChild(probe2);
   function upd(){
     var sab=Math.round(probe.getBoundingClientRect().height);
     var tb=document.getElementById("tabbar").getBoundingClientRect();
@@ -725,7 +722,7 @@ if(navigator.storage&&navigator.storage.persist){navigator.storage.persist();}
       "tabbar.bottom="+Math.round(tb.bottom)+"\n"+
       "htmlBg="+getComputedStyle(document.documentElement).backgroundColor+"\n"+
       "bodyBg="+getComputedStyle(document.body).backgroundColor+"\n"+
-      "→ Is there a CYAN strip below the tab bar?";
+      "→ Does the strip below the bar MATCH it now?";
   }
   setTimeout(upd,350);
   if(window.visualViewport){window.visualViewport.addEventListener("resize",upd);}
