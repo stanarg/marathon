@@ -5,7 +5,7 @@
      it falls back to the cached copy.
    - Static assets (icons, manifest) are CACHE-FIRST: fast, and they rarely change.
    Bump CACHE to force a full refresh of the cached shell. */
-const CACHE = "ba-marathon-v11";
+const CACHE = "ba-marathon-v13";
 const SHELL = [
   "./",
   "index.html",
@@ -42,8 +42,11 @@ self.addEventListener("fetch", (e) => {
     e.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put("index.html", copy));
+          // only cache a good page — never let a transient 404/500/redirect poison the offline shell
+          if (res && res.ok && !res.redirected) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put("index.html", copy));
+          }
           return res;
         })
         .catch(() => caches.match("index.html").then((h) => h || caches.match("./")))

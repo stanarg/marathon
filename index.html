@@ -23,7 +23,6 @@
     --good-ink:#1a7a48; --warn-ink:#8a6300; --bad-ink:#c22f24; --acc-ink:#c0431f;
     --chip:#efeff4; --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
     --topH:calc(env(safe-area-inset-top) + 58px);
-    --tabH:52px;
   }
   @media (prefers-color-scheme: dark){
     :root{
@@ -37,8 +36,8 @@
   html,body{margin:0;padding:0}
   body{
     font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:var(--card); color:var(--text);   /* base/canvas = bar colour, so the bottom strip matches the tab bar */
-    -webkit-font-smoothing:antialiased; overscroll-behavior-y:none;
+    background:var(--bg); color:var(--text);
+    -webkit-font-smoothing:antialiased;
   }
   /* ---- Top bar ---- */
   #topbar{
@@ -47,32 +46,34 @@
     background:linear-gradient(135deg,#d0431f,#e4572e);
     color:#fff; box-shadow:0 1px 0 rgba(0,0,0,.08); text-shadow:0 1px 2px rgba(0,0,0,.22);
   }
-  #topbar .inner{height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 18px}
+  #topbar .inner{height:58px;display:flex;align-items:center;gap:12px;padding:0 14px}
   #topbar h1{font-size:19px;font-weight:700;margin:0;letter-spacing:-.2px}
-  #topbar .sub{font-size:12px;font-weight:600;opacity:.95}
+  #topbar .sub{font-size:12px;font-weight:600;opacity:.95;margin-left:auto}
+  .hamburger{background:none;border:0;color:#fff;padding:6px;margin-left:-6px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:10px}
+  .hamburger:active{background:rgba(255,255,255,.18)}
+  .hamburger svg{width:26px;height:26px;display:block}
   /* ---- Scroll view ---- */
   #view{
-    position:absolute;top:0;left:0;right:0;bottom:0;
-    padding:calc(var(--topH) + 8px) 14px calc(var(--tabH) + 20px);
-    background:var(--bg);   /* keep the grey page look behind the cards */
-    overflow-y:auto; -webkit-overflow-scrolling:touch;
+    padding:calc(var(--topH) + 8px) 14px calc(env(safe-area-inset-bottom) + 28px);
+    min-height:100dvh; background:var(--bg);
   }
-  /* ---- Tab bar ---- */
-  #tabbar{
-    position:fixed;left:0;right:0;bottom:0;z-index:20;
-    display:flex; background:var(--card);
-    border-top:.5px solid var(--hair);
-    /* flush to the very bottom edge — no home-indicator inset reserved */
-    padding-bottom:0;
-    backdrop-filter:saturate(1.4) blur(12px);
-  }
-  #tabbar button{
-    flex:1;background:none;border:0;color:var(--sub);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-    padding:6px 0 4px; font-size:10.5px;font-weight:600;cursor:pointer;min-height:48px;
-  }
-  #tabbar button.active{color:var(--accent)}
-  #tabbar svg{width:25px;height:25px;display:block}
+  /* ---- Side drawer nav ---- */
+  #scrim{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.42);opacity:0;visibility:hidden;transition:opacity .25s}
+  #scrim.open{opacity:1;visibility:visible}
+  #drawer{position:fixed;top:0;left:0;bottom:0;z-index:60;width:min(78%,300px);
+    background:var(--card);box-shadow:2px 0 24px rgba(0,0,0,.28);
+    transform:translateX(-100%);visibility:hidden;
+    transition:transform .28s cubic-bezier(.4,0,.2,1), visibility 0s .28s;
+    padding:calc(env(safe-area-inset-top) + 14px) 12px calc(env(safe-area-inset-bottom) + 14px);
+    overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:4px}
+  #drawer.open{transform:translateX(0);visibility:visible;transition:transform .28s cubic-bezier(.4,0,.2,1), visibility 0s 0s}
+  body.drawer-open{position:fixed;left:0;right:0;width:100%;overflow:hidden}
+  .drawer-head{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--sub);padding:8px 14px 12px}
+  .drawer-item{display:flex;align-items:center;gap:14px;width:100%;text-align:left;
+    background:none;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:600;
+    color:var(--text);cursor:pointer;min-height:52px}
+  .drawer-item.active{background:rgba(228,87,46,.12);color:var(--accent)}
+  .drawer-item svg{width:24px;height:24px;flex:0 0 auto}
   /* ---- Cards & bits ---- */
   .card{background:var(--card);border-radius:16px;padding:16px;margin:0 0 14px;box-shadow:var(--shadow)}
   .card h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--sub);margin:0 0 12px}
@@ -85,6 +86,7 @@
   .pill.acc{background:rgba(228,87,46,.14);color:var(--acc-ink)}
   .pill.good{background:rgba(47,174,102,.16);color:var(--good-ink)}
   .pill.mp{background:rgba(224,69,58,.14);color:var(--bad-ink)}
+  .pill.warn{background:rgba(224,161,0,.16);color:var(--warn-ink)}
   .divider{height:.5px;background:var(--hair);margin:12px -16px}
   /* hero */
   .hero{background:linear-gradient(140deg,#c8391b,#e8623a);color:#fff;border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 6px 18px rgba(228,87,46,.28);text-shadow:0 1px 2px rgba(0,0,0,.28)}
@@ -163,7 +165,7 @@
   .hm .cell.r{background:var(--accent)}
   .hm .cell.rw{background:var(--accent);box-shadow:inset 0 0 0 2px var(--good)}
   .hm .cell.today{outline:1.5px solid var(--text);outline-offset:1px}
-  .toast{position:fixed;left:50%;bottom:calc(var(--tabH) + 16px);transform:translateX(-50%);
+  .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%);
     background:#000;color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;
     opacity:0;transition:opacity .2s;z-index:40;pointer-events:none}
   .toast.show{opacity:.92}
@@ -171,9 +173,14 @@
 </style>
 </head>
 <body>
-<header id="topbar"><div class="inner"><h1 id="tb-title">Today</h1><div class="sub" id="tb-sub"></div></div></header>
+<header id="topbar"><div class="inner">
+  <button class="hamburger" aria-label="Open menu" onclick="openDrawer()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <h1 id="tb-title">Today</h1>
+  <div class="sub" id="tb-sub"></div>
+</div></header>
 <main id="view"></main>
-<nav id="tabbar"></nav>
+<div id="scrim" onclick="closeDrawer()"></div>
+<aside id="drawer"><div class="drawer-head">BA Marathon</div><nav id="drawerNav"></nav></aside>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -188,7 +195,7 @@
 const START_ISO="2026-07-01";        // Wed — plan day 1
 const RACE_ISO ="2026-09-20";        // Sun — marathon
 const PLAN_LEN = 82;                 // day-indices 0..81 inclusive
-const APP_VERSION = "v11";           // bump on each deploy; shown at the bottom of Today
+const APP_VERSION = "v13";           // bump on each deploy; shown at the bottom of Today
 
 const PACE={ easy:"6:30–7:00/km", mp:"6:00–6:15/km (target 6:10)", race:"6:00–6:10/km" };
 // day kinds: strength | strengthLight | core | run | longrun | rest | race21 | race42
@@ -278,7 +285,7 @@ const REDS_SIGNS="Persistent fatigue · poor sleep · mood dips · getting sick 
    ============================================================ */
 function pad(n){return(n<10?"0":"")+n;}
 function iso(y,m,d){return y+"-"+pad(m)+"-"+pad(d);}
-function parseISO(s){const p=s.split("-").map(Number);return{y:p[0],m:p[1],d:p[2]};}
+function parseISO(s){const p=String(s==null?"":s).split("-").map(Number);return{y:p[0]||0,m:p[1]||1,d:p[2]||1};}
 function idxOf(y,m,d){return Math.floor(Date.UTC(y,m-1,d)/86400000);}
 function idxISO(s){const p=parseISO(s);return idxOf(p.y,p.m,p.d);}
 function dowOf(y,m,d){return new Date(Date.UTC(y,m-1,d)).getUTCDay();}
@@ -338,21 +345,41 @@ const TABS=[
  {id:"progress",label:"Progress",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5M4 19h16" stroke-linecap="round"/><path d="M7 15l3.5-4 3 2.5L20 7" stroke-linecap="round" stroke-linejoin="round"/></svg>'},
 ];
 let CURRENT="today";
-function renderTabs(){
-  const nav=document.getElementById("tabbar");
-  nav.innerHTML=TABS.map(t=>`<button data-tab="${t.id}" class="${t.id===CURRENT?'active':''}">${t.icon}<span>${t.label}</span></button>`).join("");
+function renderTabs(){   // build the side-drawer nav once
+  const nav=document.getElementById("drawerNav");
+  nav.innerHTML=TABS.map(t=>`<button type="button" class="drawer-item" data-tab="${t.id}">${t.icon}<span>${t.label}</span></button>`).join("");
   nav.querySelectorAll("button").forEach(b=>b.onclick=()=>go(b.dataset.tab));
 }
-function go(id){CURRENT=id;renderTabs();
+function setActiveNav(id){document.querySelectorAll("#drawerNav [data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));}
+function drawerOpen(){return document.getElementById("drawer").classList.contains("open");}
+let _scrollY=0;
+function openDrawer(){
+  const d=document.getElementById("drawer"); if(d.classList.contains("open"))return;
+  _scrollY=window.scrollY;
+  document.body.style.top=(-_scrollY)+"px"; document.body.classList.add("drawer-open");  // scroll-lock the page behind
+  d.classList.add("open"); document.getElementById("scrim").classList.add("open");
+  try{history.pushState({drawer:1},"");}catch(e){}                                          // so Back closes the drawer
+  const first=d.querySelector(".drawer-item"); if(first)first.focus();
+}
+function closeDrawer(fromPop){
+  const d=document.getElementById("drawer"); if(!d.classList.contains("open"))return;
+  d.classList.remove("open"); document.getElementById("scrim").classList.remove("open");
+  document.body.classList.remove("drawer-open"); document.body.style.top=""; window.scrollTo(0,_scrollY);
+  const h=document.querySelector(".hamburger"); if(h)h.focus();
+  if(!fromPop&&history.state&&history.state.drawer){try{history.back();}catch(e){}}
+}
+window.addEventListener("popstate",()=>{if(drawerOpen())closeDrawer(true);});
+document.addEventListener("keydown",(e)=>{if(e.key==="Escape"&&drawerOpen())closeDrawer();});
+function go(id){CURRENT=id;setActiveNav(id);closeDrawer();
   document.getElementById("tb-title").textContent=TABS.find(t=>t.id===id).label;
-  const v=document.getElementById("view");v.scrollTop=0;
+  window.scrollTo(0,0);
   ({today:renderToday,schedule:renderSchedule,nutrition:renderNutrition,progress:renderProgress}[id])();
 }
 
 /* ============================================================
    TAB: TODAY
    ============================================================ */
-function esc(s){return(s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function renderToday(){
   const dISO=todayISO(), r=resolveDay(dISO), v=document.getElementById("view");
   document.getElementById("tb-sub").textContent=fmtShort(dISO);
@@ -532,8 +559,8 @@ function renderProgress(){
   else{runs.slice().reverse().slice(0,12).forEach((rn,i)=>{
       const realIdx=runs.length-1-i;
       html+=`<div class="logitem"><div class="li-d">${fmtShort(rn.date)}</div><div style="flex:1">
-        <b>${rn.dist} km</b> · ${rn.pace||"—"}/km${rn.rpe?` · RPE ${rn.rpe}`:""}
-        ${rn.verdict?`<span class="pill ${rn.verdictClass}" style="margin-left:4px">${esc(rn.verdict)}</span>`:""}
+        <b>${esc(rn.dist)} km</b> · ${esc(rn.pace||"—")}/km${rn.rpe?` · RPE ${esc(rn.rpe)}`:""}
+        ${rn.verdict?`<span class="pill ${["good","warn","mp"].includes(rn.verdictClass)?rn.verdictClass:""}" style="margin-left:4px">${esc(rn.verdict)}</span>`:""}
         ${rn.notes?`<div class="dk">${esc(rn.notes)}</div>`:""}
         <div class="dk">${rn.plan?esc(rn.plan):""}</div></div>
         <button class="btn mini sec" style="width:44px;min-height:44px;padding:0;margin:0;flex:0 0 auto;align-self:center;display:flex;align-items:center;justify-content:center" onclick="if(confirm('Delete this run?'))delItem('${K.runs}',${realIdx})">✕</button></div>`;
@@ -556,8 +583,10 @@ function renderProgress(){
     <input type="file" id="imp" accept="application/json" style="display:none" onchange="importData(this)"></div>`;
   v.innerHTML=html;
 }
-function parseTime(s){s=(s||"").trim();if(!s)return null;const p=s.split(":").map(Number);if(p.some(isNaN))return null;
-  if(p.length===3)return p[0]*3600+p[1]*60+p[2]; if(p.length===2)return p[0]*60+p[1]; if(p.length===1)return p[0]*60; return null;}
+function parseTime(s){s=(s||"").trim();if(!s)return null;const seg=s.split(":");
+  if(seg.length<1||seg.length>3||!seg.every(x=>/^\d+$/.test(x)))return null;
+  const p=seg.map(Number);
+  if(p.length===3)return p[0]*3600+p[1]*60+p[2]; if(p.length===2)return p[0]*60+p[1]; return p[0]*60;}
 function fmtPace(sec){var s=Math.round(sec);return Math.floor(s/60)+":"+pad(s%60);}
 function saveRun(){
   const date=document.getElementById("run-date").value||todayISO();
@@ -572,7 +601,7 @@ function saveRun(){
     if(rr.state==="active"&&rr.day.pace){
       const b=paceBounds(rr.day.pace); const pl=rr.day.pace==="mp"?PACE.mp:rr.day.pace==="race"?PACE.race:PACE.easy;
       planTxt="planned "+pl;
-      if(ps<b[0]-3){verdict="faster than planned";verdictClass="mp";}
+      if(ps<b[0]-3){verdict="faster than planned";verdictClass="warn";}
       else if(ps>b[1]+3){verdict="slower than planned";verdictClass="";}
       else{verdict="in zone ✓";verdictClass="good";}
     } else if(rr.state==="active"&&rr.day.km===0){planTxt=(rr.day.kind==="strength"||rr.day.kind==="strengthLight")?"strength day in plan":rr.day.kind==="core"?"core / mobility day in plan":"rest day in plan";}
@@ -687,12 +716,19 @@ function exportData(){
 }
 function importData(input){
   const f=input.files[0];if(!f)return;const rd=new FileReader();
-  rd.onload=()=>{try{const d=JSON.parse(rd.result);
+  rd.onload=()=>{try{
+    const d=JSON.parse(rd.result);
     const byDate=(a,b)=>a.date<b.date?-1:1;
-    if(d.runs)save(K.runs,d.runs.slice().sort(byDate));
-    if(d.weights)save(K.wt,d.weights.slice().sort(byDate));
-    if(d.checkins)save(K.chk,d.checkins.slice().sort(byDate));
-    toast("Imported");renderProgress();}catch(e){toast("Bad file");}};
+    const isDate=v=>typeof v==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(v);   // only keep well-formed records
+    const cRuns=Array.isArray(d.runs)?d.runs.filter(r=>r&&isDate(r.date)):null;
+    const cWts=Array.isArray(d.weights)?d.weights.filter(w=>w&&isDate(w.date)&&isFinite(+w.kg)):null;
+    const cChk=Array.isArray(d.checkins)?d.checkins.filter(c=>c&&isDate(c.date)):null;
+    if(!cRuns&&!cWts&&!cChk){toast("Bad file");return;}
+    if(cRuns)save(K.runs,cRuns.slice().sort(byDate));
+    if(cWts)save(K.wt,cWts.slice().sort(byDate));
+    if(cChk)save(K.chk,cChk.slice().sort(byDate));
+    toast("Imported");renderProgress();
+  }catch(e){toast("Bad file");}};
   rd.readAsText(f); input.value="";
 }
 
@@ -702,47 +738,17 @@ function importData(input){
 renderTabs(); go("today");
 if(navigator.storage&&navigator.storage.persist){navigator.storage.persist();}
 
-/* ===== TEMP on-device diagnostic (remove after) — shows real safe-area numbers ===== */
-(function(){
-  var probe=document.createElement("div");
-  probe.style.cssText="position:fixed;left:0;bottom:0;width:1px;height:env(safe-area-inset-bottom);pointer-events:none;visibility:hidden";
-  document.body.appendChild(probe);
-  var box=document.createElement("div");
-  box.style.cssText="position:fixed;left:6px;right:6px;bottom:64px;z-index:99999;background:#111;color:#4ade80;font:600 12px/1.45 ui-monospace,Menlo,monospace;padding:9px 11px;border-radius:8px;white-space:pre;box-shadow:0 3px 10px rgba(0,0,0,.45)";
-  document.body.appendChild(box);
-  function upd(){
-    var sab=Math.round(probe.getBoundingClientRect().height);
-    var tb=document.getElementById("tabbar").getBoundingClientRect();
-    var vv=window.visualViewport;
-    box.textContent=
-      "DIAGNOSTIC (build "+APP_VERSION+")\n"+
-      "safe-area-bottom = "+sab+" px\n"+
-      "innerH="+window.innerHeight+"  screenH="+screen.height+"\n"+
-      "docEl.clientH="+document.documentElement.clientHeight+"  vvH="+(vv?Math.round(vv.height):"n/a")+"\n"+
-      "tabbar.bottom="+Math.round(tb.bottom)+"\n"+
-      "htmlBg="+getComputedStyle(document.documentElement).backgroundColor+"\n"+
-      "bodyBg="+getComputedStyle(document.body).backgroundColor+"\n"+
-      "→ Does the strip below the bar MATCH it now?";
-  }
-  setTimeout(upd,350);
-  if(window.visualViewport){window.visualViewport.addEventListener("resize",upd);}
-  window.addEventListener("resize",upd);
-})();
-
 if("serviceWorker" in navigator){
   // updateViaCache:"none" → always re-fetch sw.js fresh, so deploys are detected fast.
   window.addEventListener("load",()=>{
     navigator.serviceWorker.register("sw.js",{updateViaCache:"none"})
       .then((reg)=>{ reg.update(); }).catch(()=>{});
   });
-  // when a newly-deployed worker takes control, reload once to show the fresh build.
-  let _swReloaded=false;
-  navigator.serviceWorker.addEventListener("controllerchange",()=>{
-    if(!_swReloaded){ _swReloaded=true; location.reload(); }
-  });
+  // A newly-deployed worker applies on the NEXT launch (network-first fetches the fresh page),
+  // so we do NOT force-reload the live page — that would discard unsaved form input.
 }
-// re-resolve "today" when app returns to foreground (date may have changed)
-document.addEventListener("visibilitychange",()=>{if(!document.hidden&&CURRENT==="today")renderToday();});
+// re-render the CURRENT tab when the app returns to foreground (the date may have rolled over)
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)({today:renderToday,schedule:renderSchedule,nutrition:renderNutrition,progress:renderProgress}[CURRENT])();});
 </script>
 </body>
 </html>
