@@ -187,7 +187,7 @@
 const START_ISO="2026-07-01";        // Wed — plan day 1
 const RACE_ISO ="2026-09-20";        // Sun — marathon
 const PLAN_LEN = 82;                 // day-indices 0..81 inclusive
-const APP_VERSION = "v5";            // bump on each deploy; shown at the bottom of Today
+const APP_VERSION = "v6";            // bump on each deploy; shown at the bottom of Today
 
 const PACE={ easy:"6:30–7:00/km", mp:"6:00–6:15/km (target 6:10)", race:"6:00–6:10/km" };
 // day kinds: strength | strengthLight | core | run | longrun | rest | race21 | race42
@@ -700,6 +700,33 @@ function importData(input){
    ============================================================ */
 renderTabs(); go("today");
 if(navigator.storage&&navigator.storage.persist){navigator.storage.persist();}
+
+/* ===== TEMP on-device diagnostic (remove after) — shows real safe-area numbers ===== */
+(function(){
+  var probe=document.createElement("div");
+  probe.style.cssText="position:fixed;left:0;bottom:0;width:1px;height:env(safe-area-inset-bottom);pointer-events:none;visibility:hidden";
+  document.body.appendChild(probe);
+  var box=document.createElement("div");
+  box.style.cssText="position:fixed;left:6px;right:6px;bottom:64px;z-index:99999;background:#111;color:#4ade80;font:600 12px/1.45 ui-monospace,Menlo,monospace;padding:9px 11px;border-radius:8px;white-space:pre;box-shadow:0 3px 10px rgba(0,0,0,.45)";
+  document.body.appendChild(box);
+  function upd(){
+    var sab=Math.round(probe.getBoundingClientRect().height);
+    var tb=document.getElementById("tabbar").getBoundingClientRect();
+    var vv=window.visualViewport;
+    box.textContent=
+      "DIAGNOSTIC (build v6)\n"+
+      "safe-area-bottom = "+sab+" px\n"+
+      "window.innerHeight = "+window.innerHeight+"\n"+
+      "documentEl.clientH = "+document.documentElement.clientHeight+"\n"+
+      "visualVP.height = "+(vv?Math.round(vv.height):"n/a")+"\n"+
+      "tabbar.bottom = "+Math.round(tb.bottom)+" , height = "+Math.round(tb.height)+"\n"+
+      "GAP below tabbar = "+Math.round(window.innerHeight-tb.bottom)+" px";
+  }
+  setTimeout(upd,350);
+  if(window.visualViewport){window.visualViewport.addEventListener("resize",upd);}
+  window.addEventListener("resize",upd);
+})();
+
 if("serviceWorker" in navigator){
   // updateViaCache:"none" → always re-fetch sw.js fresh, so deploys are detected fast.
   window.addEventListener("load",()=>{
