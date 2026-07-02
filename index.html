@@ -192,10 +192,10 @@
    (baseline 2,700–2,800 kcal + 90 kcal/km), the app applies it
    and labels the result as derived.
    ============================================================ */
-const START_ISO="2026-07-01";        // Wed — plan day 1
+const START_ISO="2026-07-03";        // Fri — plan day 1 (shifted from Jul 1; races Aug 23 & Sep 20 unchanged)
 const RACE_ISO ="2026-09-20";        // Sun — marathon
-const PLAN_LEN = 82;                 // day-indices 0..81 inclusive
-const APP_VERSION = "v13";           // bump on each deploy; shown at the bottom of Today
+const PLAN_LEN = 80;                 // day-indices 0..79 inclusive (Jul 3 → race Sep 20)
+const APP_VERSION = "v14";           // bump on each deploy; shown at the bottom of Today
 
 const PACE={ easy:"6:30–7:00/km", mp:"6:00–6:15/km (target 6:10)", race:"6:00–6:10/km" };
 // day kinds: strength | strengthLight | core | run | longrun | rest | race21 | race42
@@ -209,29 +209,29 @@ const S={ // reusable
 };
 // schedule arrays indexed by getUTCDay(): [0]Sun [1]Mon [2]Tue [3]Wed [4]Thu [5]Fri [6]Sat
 const WEEKS=[
- {n:1, dl:"Jul 1 – 7",     phase:"Base",   long:7,  total:14, note:"Run-walk intervals (~4 min run / 1 min walk), matched to your real current fitness.",
+ {n:1, dl:"Jul 3 – 9",     phase:"Base",   long:7,  total:14, note:"Run-walk intervals (~4 min run / 1 min walk), matched to your real current fitness.",
   sched:[S.rest, S.str, D("Easy run","run",3,"easy","run-walk"), S.strL, D("Easy run","run",4,"easy","run-walk"), S.core, D("Long run","longrun",7,"easy","run-walk")]},
- {n:2, dl:"Jul 8 – 14",    phase:"Base",   long:9,  total:18, note:"Run-walk ratio improves (~6 min run / 1 min walk).",
+ {n:2, dl:"Jul 10 – 16",   phase:"Base",   long:9,  total:18, note:"Run-walk ratio improves (~6 min run / 1 min walk).",
   sched:[S.rest, S.str, D("Easy run","run",4,"easy","run-walk"), S.strL, D("Easy run","run",5,"easy","run-walk"), S.core, D("Long run","longrun",9,"easy","run-walk")]},
- {n:3, dl:"Jul 15 – 21",   phase:"Base",   long:12, total:23, note:"Shift toward continuous running as it feels comfortable.",
+ {n:3, dl:"Jul 17 – 23",   phase:"Base",   long:12, total:23, note:"Shift toward continuous running as it feels comfortable.",
   sched:[S.rest, S.str, D("Easy run","run",5,"easy"), S.strL, D("Easy run","run",6,"easy"), S.core, D("Long run","longrun",12,"easy","walk breaks optional")]},
- {n:4, dl:"Jul 22 – 28",   phase:"Base",   long:15, total:28, note:"Full strength volume resumes; running now continuous (no walk breaks).",
+ {n:4, dl:"Jul 24 – 30",   phase:"Base",   long:15, total:28, note:"Full strength volume resumes; running now continuous (no walk breaks).",
   sched:[S.rest, S.str, D("Easy run","run",6,"easy"), S.str, D("Easy run","run",7,"easy"), S.core, D("Long run","longrun",15,"easy","continuous")]},
- {n:5, dl:"Jul 29 – Aug 4",phase:"Base",   long:18, total:33, note:"Final easy-pace week — the original plan's Week 6 volume now begins here.",
+ {n:5, dl:"Jul 31 – Aug 6",phase:"Base",   long:18, total:33, note:"Final easy-pace week — the original plan's Week 6 volume now begins here.",
   sched:[S.rest, S.str, D("Easy run","run",7,"easy"), S.str, D("Easy run","run",8,"easy"), S.core, D("Long run","longrun",18,"easy")]},
- {n:6, dl:"Aug 5 – 11",    phase:"Build",  long:22, total:39, note:"Marathon pace begins — Thursday and Saturday both — now that 6 weeks of aerobic base are in place.",
+ {n:6, dl:"Aug 7 – 13",    phase:"Build",  long:22, total:39, note:"Marathon pace begins — Thursday and Saturday both — now that 6 weeks of aerobic base are in place.",
   sched:[S.rest, S.str, D("Easy run","run",8,"easy"), S.str, D("Marathon-pace run","run",9,"mp"), S.core, D("Long run","longrun",22,"mp")]},
- {n:7, dl:"Aug 12 – 18",   phase:"Build",  long:26, total:44, note:"Rehearse race fueling on this 26 km run (see Nutrition → race-week).",
+ {n:7, dl:"Aug 14 – 20",   phase:"Build",  long:26, total:44, note:"Rehearse race fueling on this 26 km run (see Nutrition → race-week).",
   sched:[S.rest, S.str, D("Easy run","run",8,"easy"), S.str, D("Marathon-pace run","run",10,"mp"), S.core, D("Long run","longrun",26,"mp")]},
- {n:8, dl:"Aug 19 – 25",   phase:"21K Race",long:21,total:32, note:"Medio Maratón de Buenos Aires (Sun 23 Aug). Race it at marathon pace — not faster. Wednesday is core only to stay fresh.",
+ {n:8, dl:"Aug 21 – 27",   phase:"21K Race",long:21,total:32, note:"Medio Maratón de Buenos Aires (Sun 23 Aug — unchanged). Race it at marathon pace — not faster. Wednesday is core only to stay fresh.",
   sched:[D("21K RACE","race21",21,"race","Medio Maratón — marathon pace, not faster"), S.str, D("Easy run","run",6,"easy"), S.coreOnly, D("Easy shakeout","run",5,"easy","shakeout"), S.rest, S.rest]},
- {n:9, dl:"Aug 26 – Sep 1",phase:"Peak",   long:30, total:50, note:"The defining session. Complete this 30 km and the marathon is a known quantity. Rehearse race fueling here too.",
+ {n:9, dl:"Aug 28 – Sep 3",phase:"Peak",   long:30, total:50, note:"The defining session. Complete this 30 km and the marathon is a known quantity. Rehearse race fueling here too.",
   sched:[S.rest, S.str, D("Easy run","run",10,"easy"), S.str, D("Marathon-pace run","run",10,"mp"), S.core, D("Long run","longrun",30,"mp")]},
- {n:10,dl:"Sep 2 – 8",     phase:"Taper",  long:22, total:38, note:"Taper begins — strength drops to light or core only.",
+ {n:10,dl:"Sep 4 – 10",    phase:"Taper",  long:22, total:38, note:"Taper begins — strength drops to light or core only.",
   sched:[S.rest, D("Strength — lower body (light)","strengthLight"), D("Easy run","run",8,"easy"), S.coreOnly, D("Marathon-pace run","run",8,"mp"), S.core, D("Long run","longrun",22,"mp")]},
- {n:11,dl:"Sep 9 – 15",    phase:"Taper",  long:14, total:25, note:"No strength sessions — legs need to arrive fresh.",
+ {n:11,dl:"Sep 11 – 17",   phase:"Taper",  long:14, total:25, note:"No strength sessions — legs need to arrive fresh.",
   sched:[S.rest, S.coreOnly, D("Easy run","run",6,"easy"), S.coreOnly, D("Easy run","run",5,"easy"), S.rest, D("Long run","longrun",14,"easy")]},
- {n:12,dl:"Sep 16 – 20",   phase:"Race Week",long:null,total:9, note:"Race week — short shakeouts only, no strength. In-window shakeout is Wed (4 km); the plan's other 5 km shakeout falls the day after the race. Sun 20 Sep: RACE, 42.195 km.",
+ {n:12,dl:"Sep 18 – 20",   phase:"Race Week",long:null,total:9, note:"Race week — you begin it Friday. Fri: kit pickup / off legs, Sat: rest & carb-load, then RACE Sunday 20 Sep, 42.195 km. Your last easy run is Thursday's 5 km. (The Mon/Wed shakeouts listed fall after race day on this shifted calendar — skip them, or do a light 10-min jog Saturday if the legs feel stiff.)",
   sched:[D("MARATHON — 42.195 km","race42",42,"race","Race day!"), D("Easy shakeout","run",5,"easy","flexible — falls day after race in-calendar"), S.rest, D("Easy shakeout","run",4,"easy","shakeout"), S.rest, D("Rest (kit pickup)","rest"), S.rest]},
 ];
 const DOW_ORDER=[1,2,3,4,5,6,0]; // Mon..Sun for display
@@ -392,7 +392,7 @@ function renderToday(){
 
   if(r.state==="pre"){
     html+=`<div class="card"><h2>Before the plan</h2><h3>Plan starts in ${r.daysToStart} day${r.daysToStart>1?"s":""}</h3>
-      <p class="big muted">First session: Wednesday 1 Jul — ${WEEKS[0].sched[3].t.toLowerCase()}. Week 1 uses run-walk intervals (~4 min run / 1 min walk).</p></div>`;
+      <p class="big muted">First session: Friday 3 Jul — ${WEEKS[0].sched[5].t.toLowerCase()}, then your first long run Saturday. Week 1 uses run-walk intervals (~4 min run / 1 min walk).</p></div>`;
     v.innerHTML=html; return;
   }
   if(r.state==="post"){
@@ -456,7 +456,7 @@ function renderSchedule(){
   const curWeek=r.state==="active"?r.weekNum:(r.state==="pre"?0:13);
   document.getElementById("tb-sub").textContent="12 weeks";
   const openSet=new Set(load(K.exp));
-  let html=`<div class="card" style="padding:14px 16px"><div class="tiny">Marathon plan · 1 Jul → 20 Sep 2026. Tap a week for the daily breakdown. Weeks run Wed→Tue; your current day is highlighted.</div></div>`;
+  let html=`<div class="card" style="padding:14px 16px"><div class="tiny">Marathon plan · 3 Jul → 20 Sep 2026. Tap a week for the daily breakdown. Weeks run Fri→Thu; your current day is highlighted.</div></div>`;
   WEEKS.forEach(wk=>{
     const isCur=wk.n===curWeek, open=openSet.has(wk.n)||isCur;
     const longTxt=wk.long!=null?wk.long+" km":"—";
