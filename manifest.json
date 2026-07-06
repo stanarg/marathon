@@ -1,13 +1,13 @@
 {
   "name": "Buenos Aires Marathon",
   "short_name": "BA Marathon",
-  "description": "Personal marathon training & nutrition companion — 12-week plan, daily fuel targets, run & weigh-in logging.",
+  "description": "Personal marathon training & nutrition companion — 10-week plan, shift-aware daily briefing, adaptive schedule, run & weigh-in logging.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#000000",
-  "theme_color": "#e4572e",
+  "background_color": "#0a0a0b",
+  "theme_color": "#0a0a0b",
   "lang": "en",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

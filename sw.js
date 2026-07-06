@@ -1,14 +1,19 @@
-/* BA Marathon — offline service worker.
-   Strategy:
-   - The HTML page (navigations) is NETWORK-FIRST: when you have signal you always
-     get the freshly deployed index.html, so edits show up on next launch. Offline,
-     it falls back to the cached copy.
-   - Static assets (icons, manifest) are CACHE-FIRST: fast, and they rarely change.
-   Bump CACHE to force a full refresh of the cached shell. */
-const CACHE = "ba-marathon-v14";
+/* BA Marathon v2 — offline service worker.
+   Strategy (proven in v1, adapted for multi-file):
+   - Navigations are NETWORK-FIRST: online you always get the freshly deployed
+     index.html; offline it falls back to the cached copy.
+   - Static assets are CACHE-FIRST. Asset URLs are version-stamped (?v=N) and
+     pre-cached, so a fresh index.html can never pair with a stale app.js:
+     new stamps miss the old cache and fall through to the network.
+   DEPLOY RITUAL: bump CACHE here + APP_VERSION in data.js + ?v= stamps in index.html. */
+const CACHE = "bam2-v15";
 const SHELL = [
   "./",
   "index.html",
+  "styles.css?v=15",
+  "data.js?v=15",
+  "engine.js?v=15",
+  "app.js?v=15",
   "manifest.json",
   "icon-180.png",
   "icon-192.png",
@@ -42,7 +47,7 @@ self.addEventListener("fetch", (e) => {
     e.respondWith(
       fetch(req)
         .then((res) => {
-          // only cache a good page — never let a transient 404/500/redirect poison the offline shell
+          // only cache a good page — never let a transient 404/500/redirect poison the shell
           if (res && res.ok && !res.redirected) {
             const copy = res.clone();
             caches.open(CACHE).then((c) => c.put("index.html", copy));
@@ -54,9 +59,10 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // Cache-first for static assets.
+  // Cache-first for static assets. NO ignoreSearch — the ?v= stamp IS the cache key,
+  // which is what makes stale-HTML/fresh-JS pairings impossible.
   e.respondWith(
-    caches.match(req, { ignoreSearch: true }).then((hit) => {
+    caches.match(req).then((hit) => {
       if (hit) return hit;
       return fetch(req)
         .then((res) => {
