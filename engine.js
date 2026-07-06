@@ -39,14 +39,12 @@ const ENGINE = (() => {
   function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
   function parseTime(s){ s=(s||"").trim(); if(!s) return null;
     const seg=s.split(":");
-    if(seg.length<1||seg.length>3||!seg.every(x=>/^\d+$/.test(x))) return null;
+    // require at least mm:ss — a lone integer is ambiguous (52 → 52 min? 52 s?), reject it
+    if(seg.length<2||seg.length>3||!seg.every(x=>/^\d+$/.test(x))) return null;
     const p=seg.map(Number);
     if(p.length===3) return p[0]*3600+p[1]*60+p[2];
-    if(p.length===2) return p[0]*60+p[1];
-    return p[0]*60; }
+    return p[0]*60+p[1]; }
   function fmtPace(sec){ const s=Math.round(sec); return Math.floor(s/60)+":"+pad(s%60); }
-  function fmtDur(sec){ const s=Math.round(sec), h=Math.floor(s/3600), m=Math.floor((s%3600)/60);
-    return h>0 ? h+"h "+pad(m)+"m" : m+" min"; }
   function r10(n){ return Math.round(n/10)*10; }
 
   /* ============ shift-aware briefing ============ */
@@ -309,7 +307,7 @@ const ENGINE = (() => {
   }
 
   return { pad, iso, parseISO, isISO, idxISO, dowISO, addDaysISO, fmtNice, fmtShort, fmtWD,
-           weekOfISO, weekWindow, esc, parseTime, fmtPace, fmtDur, r10,
+           weekOfISO, weekWindow, esc, parseTime, fmtPace, r10,
            shiftPattern, briefingFor, BASE_SESSIONS, BASE_BY_ID, validatePlanData,
            effectiveSchedule, isRunKind, validateMove, validateSwap, suggestFix,
            nutritionFor, paceBounds, verdictFor, deriveRing, deriveStreak, deriveMilestones,

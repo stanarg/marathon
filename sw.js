@@ -6,14 +6,14 @@
      pre-cached, so a fresh index.html can never pair with a stale app.js:
      new stamps miss the old cache and fall through to the network.
    DEPLOY RITUAL: bump CACHE here + APP_VERSION in data.js + ?v= stamps in index.html. */
-const CACHE = "bam2-v15";
+const CACHE = "bam2-v16";
 const SHELL = [
   "./",
   "index.html",
-  "styles.css?v=15",
-  "data.js?v=15",
-  "engine.js?v=15",
-  "app.js?v=15",
+  "styles.css?v=16",
+  "data.js?v=16",
+  "engine.js?v=16",
+  "app.js?v=16",
   "manifest.json",
   "icon-180.png",
   "icon-192.png",

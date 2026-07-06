@@ -5,7 +5,7 @@
 "use strict";
 const DATA = (() => {
 
-  const APP_VERSION = "v15";
+  const APP_VERSION = "v16";
 
   /* ---- plan window ---- */
   const PLAN_START_ISO = "2026-07-13";   // Monday, training week 1 day 1

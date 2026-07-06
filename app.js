@@ -81,7 +81,7 @@ const APP = (() => {
     {id:"nutrition",label:"Nutrition",icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3v7a2 2 0 004 0V3M9 3v18M17 3c-1.6 0-2.5 2-2.5 5.5S15.4 14 17 14v7" stroke-linecap="round" stroke-linejoin="round"/></svg>'},
     {id:"progress", label:"Progress", icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5M4 19h16" stroke-linecap="round"/><path d="M7 15l3.5-4 3 2.5L20 7" stroke-linecap="round" stroke-linejoin="round"/></svg>'},
   ];
-  let CURRENT="today", _lastRenderDate=null, _dirty=false;
+  let CURRENT="today", _lastRenderDate=null, _dirty=false, _animate=false;
   const UI={ openDay:null, mode:null, pending:null, redsDraft:{},
              runDraft:{date:"",dist:"",time:"",rpe:"",notes:"",rw:false}, wtDraft:{date:"",kg:""} };
 
@@ -100,10 +100,16 @@ const APP = (() => {
     CURRENT=id; setActiveNav(id); closeDrawer();
     document.getElementById("tb-title").textContent = TABS.find(t=>t.id===id).label;
     window.scrollTo(0,0);
-    rerender();
+    _animate=true; rerender();
     const ui=load(K.ui,{}); ui.lastTab=id; save(K.ui,ui);
   }
-  function rerender(){ _dirty=false; _lastRenderDate=todayISO(); VIEWS[CURRENT](); }
+  function rerender(){
+    _dirty=false; _lastRenderDate=todayISO(); VIEWS[CURRENT]();
+    const v=document.getElementById("view");
+    // stagger-animate only on a tab switch; in-place updates re-render silently
+    if(_animate){ v.classList.remove("anim-in"); void v.offsetWidth; v.classList.add("anim-in"); _animate=false; }
+    else v.classList.remove("anim-in");
+  }
 
   /* ============ shared render bits ============ */
   const esc=E.esc;
@@ -135,6 +141,37 @@ const APP = (() => {
     if(s.km && s.kind!=="race42") v=s.km+" km · "+v;
     return v;
   }
+  // one fuel card, shared by the active-day and pre-plan Today states
+  function fuelCardHTML(N, km){
+    km = km||0;
+    if(N.race){
+      return `<div class="card"><h2>Race-day fuelling</h2>
+        <p class="big"><b>In-race:</b> ${esc(D.RACEFUEL.during)}</p>
+        <div class="divider"></div><p class="big"><b>Hydration:</b> ${esc(D.RACEFUEL.hydra)}</p>
+        <div class="note" style="margin-top:10px">Carb-load was Fri–Sat. Race morning: familiar breakfast 3 h before, nothing new.</div></div>`;
+    }
+    if(N.loadDay){
+      return `<div class="card" style="border-color:rgba(255,90,31,.5)"><h2 style="color:var(--acc-ink)">Today's fuel · Carb-load</h2>
+        <div class="metric" style="margin-bottom:10px"><div class="v display">${esc(N.carb.g)}</div><div class="l">carbs today</div>
+          <div class="k">${esc(N.carb.gkg)} — carbs lead today, calories follow</div></div>
+        <div class="mgrid"><div class="metric"><div class="v" style="font-size:17px">${D.PROTEIN}</div><div class="l">protein</div><div class="k">stays flat</div></div>
+          <div class="metric"><div class="v" style="font-size:17px">low fibre</div><div class="l">final 36 h</div><div class="k">easy starches, nothing new</div></div></div>
+        <div class="note" style="margin-top:10px">${esc(D.RACEFUEL.load)}</div></div>`;
+    }
+    return `<div class="card"><h2>Today's fuel · ${esc(N.label)}</h2>
+      <div class="metric" style="margin-bottom:10px"><div class="v display">${esc(N.kcal)} kcal</div><div class="l">energy target</div>
+        ${N.derived?`<div class="k">plan formula: 2,700–2,800 baseline + 90 kcal/km × ${N.km} km</div>`:""}</div>
+      <div class="mgrid"><div class="metric"><div class="v" style="font-size:17px">${esc(N.carb.g)}</div><div class="l">carbs</div><div class="k">${esc(N.carb.gkg)}</div></div>
+        <div class="metric"><div class="v" style="font-size:17px">${D.PROTEIN}</div><div class="l">protein</div><div class="k">1.8–2.0 g/kg</div></div>
+        <div class="metric"><div class="v" style="font-size:17px">${D.FAT}</div><div class="l">fat</div><div class="k">keep ≥ 70 g</div></div>
+        <div class="metric"><div class="v" style="font-size:14px;padding-top:3px">${km>0?"+ recovery":"base plate"}</div><div class="l">${km>0?"post-run carb+protein":"whole-food template"}</div><div class="k">${km>0?"1.0–1.2 g/kg carbs in 1 h":"see Nutrition tab"}</div></div></div>
+      ${N.opt?`<div class="tiny" style="margin-top:10px">${esc(N.opt)}</div>`:""}</div>`;
+  }
+  function quickLogHTML(){
+    return `<div class="card"><h2>Quick log</h2><div class="frow">
+      <button class="btn mini" data-action="quickLog" data-focus="run-dist">＋ Log run</button>
+      <button class="btn mini sec" data-action="quickLog" data-focus="wt-kg">＋ Weigh-in</button></div></div>`;
+  }
   function ringSVG(r){
     const C=2*Math.PI*52;
     const off=C*(1-(r?r.pct:0));
@@ -162,8 +199,13 @@ const APP = (() => {
     if(toStart>0){
       html+=`<div class="card"><h2>Before the plan</h2><h3>Training starts in ${toStart} day${toStart>1?"s":""}</h3>
         <p class="big muted">Week 1 begins Monday ${E.fmtShort(D.PLAN_START_ISO)} with lower-body strength; first run Tuesday (3 km run-walk), first long run Sunday (8 km). Easy does it — the plan meets you where you are.</p></div>`;
-      html+=`<div class="card"><h2>While you wait</h2><p class="big">Sort the gym plan, test your running shoes, and stock the kitchen — the fueling starts with the training.</p></div>`;
-      html+=`<div class="footer">BA Marathon · build ${D.APP_VERSION}</div>`;
+      // today's recommended fuel (baseline — no session yet) so eating dials in before training does
+      const Npre=E.nutritionFor({kind:"rest", km:0});
+      Npre.label="Baseline · no training yet";
+      html+=fuelCardHTML(Npre, 0);
+      html+=`<div class="card"><h2>Get a head start</h2><p class="big">Log a weigh-in or two now to set your baseline trend, and eat around the numbers above. Targets climb once the running does — a run day adds ~90 kcal per km on top of this baseline.</p></div>`;
+      html+=quickLogHTML();
+      html+=`<div class="footer">BA Marathon · build ${D.APP_VERSION}${DEBUG_TODAY?" · ⚠︎ date override "+DEBUG_TODAY:""}</div>`;
       v.innerHTML=html; return;
     }
     if(toRace<0){
@@ -187,9 +229,10 @@ const APP = (() => {
     // unresolved fix card (most recent 2)
     const unresolved=S.sessions.filter(s=>s.status==="unresolved").sort((a,b2)=>a.date<b2.date?1:-1).slice(0,2);
     if(unresolved.length){
+      const plan=loadPlan();
       html+=`<div class="card fix"><h2>Needs a decision</h2>`;
       unresolved.forEach(s=>{
-        const choices=E.suggestFix(s, loadPlan(), t);
+        const choices=E.suggestFix(s, plan, t);
         html+=`<div style="margin-bottom:10px"><h3 style="font-size:14px">${sessionLine(s)} — ${E.fmtWD(s.date)} ${E.fmtShort(s.date)}</h3>
           <div class="choices">
           <button class="abtn grn" data-action="fixDone" data-id="${s.id}">✓ I did it — mark done</button>`;
@@ -221,7 +264,7 @@ const APP = (() => {
         <div class="actrow" style="margin-top:10px"><button class="abtn" data-action="nav" data-tab="schedule">Open Schedule</button></div></div>`;
     }
     todays.forEach(s=>{
-      html+=`<div class="card"><div class="row"><h3>${esc(s.t)}</h3><span class="phase ${esc((s.status==='planned'?wk.phase:wk.phase).replace(/\W/g,''))}">${esc(wk.phase)}</span></div>
+      html+=`<div class="card"><div class="row"><h3>${esc(s.t)}</h3><span class="phase ${esc(wk.phase.replace(/\W/g,''))}">${esc(wk.phase)}</span></div>
         <div class="tiny" style="margin:2px 0 10px">Week ${wNum} · ${E.fmtNice(t)} ${s.isMoved?'· <b>moved from '+E.fmtShort(s.baseDate)+'</b>':''} ${s.status==="done"?'· <b style="color:var(--good-ink)">done ✓</b>':''}</div>`;
       if(s.kind==="rest"){
         html+=`<p class="big">Full rest. Walk if you want — no running, no lifting.</p>${s.note?`<div class="note" style="margin-top:8px">${esc(s.note)}</div>`:""}`;
@@ -250,31 +293,7 @@ const APP = (() => {
 
     // fuel
     const primary=todays.find(s=>E.isRunKind(s.kind)) || todays[0];
-    if(primary){
-      const N=E.nutritionFor(primary);
-      if(N.race){
-        html+=`<div class="card"><h2>Race-day fuelling</h2>
-          <p class="big"><b>In-race:</b> ${esc(D.RACEFUEL.during)}</p>
-          <div class="divider"></div><p class="big"><b>Hydration:</b> ${esc(D.RACEFUEL.hydra)}</p>
-          <div class="note" style="margin-top:10px">Carb-load was Fri–Sat. Race morning: familiar breakfast 3 h before, nothing new.</div></div>`;
-      } else if(N.loadDay){
-        html+=`<div class="card" style="border-color:rgba(255,90,31,.5)"><h2 style="color:var(--acc-ink)">Today's fuel · Carb-load</h2>
-          <div class="metric" style="margin-bottom:10px"><div class="v display">${esc(N.carb.g)}</div><div class="l">carbs today</div>
-            <div class="k">${esc(N.carb.gkg)} — carbs lead today, calories follow</div></div>
-          <div class="mgrid"><div class="metric"><div class="v" style="font-size:17px">${D.PROTEIN}</div><div class="l">protein</div><div class="k">stays flat</div></div>
-            <div class="metric"><div class="v" style="font-size:17px">low fibre</div><div class="l">final 36 h</div><div class="k">easy starches, nothing new</div></div></div>
-          <div class="note" style="margin-top:10px">${esc(D.RACEFUEL.load)}</div></div>`;
-      } else {
-        html+=`<div class="card"><h2>Today's fuel · ${esc(N.label)}</h2>
-          <div class="metric" style="margin-bottom:10px"><div class="v display">${esc(N.kcal)} kcal</div><div class="l">energy target</div>
-            ${N.derived?`<div class="k">plan formula: 2,700–2,800 baseline + 90 kcal/km × ${N.km} km</div>`:""}</div>
-          <div class="mgrid"><div class="metric"><div class="v" style="font-size:17px">${esc(N.carb.g)}</div><div class="l">carbs</div><div class="k">${esc(N.carb.gkg)}</div></div>
-            <div class="metric"><div class="v" style="font-size:17px">${D.PROTEIN}</div><div class="l">protein</div><div class="k">1.8–2.0 g/kg</div></div>
-            <div class="metric"><div class="v" style="font-size:17px">${D.FAT}</div><div class="l">fat</div><div class="k">keep ≥ 70 g</div></div>
-            <div class="metric"><div class="v" style="font-size:14px;padding-top:3px">${primary.km>0?"+ recovery":"base plate"}</div><div class="l">${primary.km>0?"post-run carb+protein":"whole-food template"}</div><div class="k">${primary.km>0?"1.0–1.2 g/kg carbs in 1 h":"see Nutrition tab"}</div></div></div>
-          ${N.opt?`<div class="tiny" style="margin-top:10px">${esc(N.opt)}</div>`:""}</div>`;
-      }
-    }
+    if(primary) html+=fuelCardHTML(E.nutritionFor(primary), primary.km);
 
     // ring + streak
     const runs=load(K.runs,[]);
@@ -292,9 +311,7 @@ const APP = (() => {
         ${D.WEEKS[ring.week-1].note?`<div class="tiny" style="margin-top:10px">${esc(D.WEEKS[ring.week-1].note)}</div>`:""}</div>`;
     }
 
-    html+=`<div class="card"><h2>Quick log</h2><div class="frow">
-      <button class="btn mini" data-action="quickLog" data-focus="run-dist">＋ Log run</button>
-      <button class="btn mini sec" data-action="quickLog" data-focus="wt-kg">＋ Weigh-in</button></div></div>`;
+    html+=quickLogHTML();
     html+=`<div class="footer">BA Marathon · build ${D.APP_VERSION}${DEBUG_TODAY?" · ⚠︎ date override "+DEBUG_TODAY:""}</div>`;
     v.innerHTML=html;
   }
@@ -302,6 +319,7 @@ const APP = (() => {
   /* ============ SCHEDULE ============ */
   function renderSchedule(){
     const t=todayISO(), v=document.getElementById("view"), S=sched();
+    v.classList.remove("anim-in");   // direct-render actions (expand/move/swap) must not replay the entrance
     document.getElementById("tb-sub").textContent="10 weeks";
     const curWeek=E.weekOfISO(t);
     const ui=load(K.ui,{}); const openSet=new Set(ui.weeksOpen||[]);
@@ -309,7 +327,6 @@ const APP = (() => {
     D.WEEKS.forEach(wk=>{
       const isCur=wk.n===curWeek, open=openSet.has(wk.n)||isCur;
       const longTxt=wk.long!=null?wk.long+" km":"—";
-      const wkSessions=(S.byWeek[wk.n]||[]);
       html+=`<div class="wk ${isCur?"cur":""} ${open?"open":""}" data-wk="${wk.n}">
         <button type="button" class="hd" data-action="toggleWeek" data-wk="${wk.n}" aria-expanded="${open}">
           <div class="num">${wk.n}</div>
@@ -336,7 +353,7 @@ const APP = (() => {
                 <div class="dk">${esc(paceLabel(s))}${s.optKm?` · optional +${s.optKm} km easy`:""}</div>
                 <div class="dk">${shiftBadge(dateISO)}</div></div>
               <div class="st">${stchip(s)}</div></div>`;
-          if(openRow) html+=dayPanel(s, t);
+          if(openRow) html+=dayPanel(s, t, S);
           html+=`</div>`;
         });
       });
@@ -345,7 +362,7 @@ const APP = (() => {
     v.innerHTML=html;
   }
 
-  function dayPanel(s, t){
+  function dayPanel(s, t, S){
     const plan=loadPlan();
     let html=`<div class="expand">`;
     if(s.note) html+=`<div class="tiny" style="margin-bottom:9px">${esc(s.note)}</div>`;
@@ -373,7 +390,6 @@ const APP = (() => {
       html+=`</div><div class="tiny" style="margin-top:7px">±3 days max · long runs stay Sat–Mon · ⚠︎ = has a warning</div>`;
     }
     if(UI.mode==="swap" && UI.openDay===s.id){
-      const S=sched();
       const wkNum=E.weekOfISO(s.date);
       const cands=(S.byWeek[wkNum]||[]).filter(x=>x.id!==s.id && x.kind!=="rest" && !x.anchor && x.status!=="done");
       html+=`<div class="tiny" style="margin-top:10px;font-weight:700">Swap days with:</div><div class="movegrid">`;
@@ -674,7 +690,7 @@ const APP = (() => {
       const rpe=document.getElementById("run-rpe").value;
       const notes=document.getElementById("run-notes").value.trim();
       if(!E.isISO(date)){ toast("Pick a date"); return; }
-      if(!dist||dist<=0){ toast("Enter a distance"); return; }
+      if(!isFinite(dist)||dist<=0||dist>100){ toast("Distance looks off"); return; }   // same ≤100 cap as import/migrate
       if(timeStr.trim() && timeSec==null){ toast("Time looks off — use mm:ss or h:mm:ss"); return; }
       const runs=load(K.runs,[]);
       const S1=sched();
@@ -808,6 +824,9 @@ const APP = (() => {
       if(cWts)  allOk=save(K.wt,  cWts.slice().sort(byDate))&&allOk;
       if(cChk)  allOk=save(K.chk, cChk.slice().sort(byDate))&&allOk;
       if(cPlan) savePlan(cPlan);
+      if(d.ui && Array.isArray(d.ui.seenBadges)){   // round-trip the cosmetic badge-seen flags
+        const ui=load(K.ui,{}); ui.seenBadges=d.ui.seenBadges.filter(x=>typeof x==="string"); save(K.ui,ui);
+      }
       if(allOk) toast("Imported");
       rerender();
     }catch(e){ toast("Bad file"); } };

@@ -85,9 +85,7 @@ body.drawer-open{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .divider{height:.5px;background:var(--hair);margin:12px -16px}
 
 .pill{display:inline-block;background:var(--chip);color:var(--text);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;margin:2px 4px 2px 0}
-.pill.acc{background:rgba(255,90,31,.16);color:var(--acc-ink)}
 .pill.good{background:rgba(61,220,132,.14);color:var(--good-ink)}
-.pill.mp{background:rgba(255,92,82,.14);color:var(--bad-ink)}
 .pill.warn{background:rgba(255,202,58,.14);color:var(--warn-ink)}
 
 .phase{font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;background:var(--chip);color:var(--dim);text-transform:uppercase;letter-spacing:.4px}
@@ -128,8 +126,7 @@ body.drawer-open{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .ringbox .rc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .ringbox .rv{font-size:26px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;line-height:1}
 .ringbox .rl{font-size:10px;font-weight:700;color:var(--dim);margin-top:3px;text-transform:uppercase;letter-spacing:.4px}
-.ring-prog{transition:stroke-dashoffset .8s ease}
-@media (prefers-reduced-motion: reduce){ .ring-prog{transition:none} }
+.ring-prog{transition:stroke-dashoffset .9s cubic-bezier(.22,.61,.36,1)}
 .statcol{flex:1;display:flex;flex-direction:column;gap:10px}
 .stat .v{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
 .stat .l{font-size:10.5px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
@@ -177,7 +174,6 @@ body.drawer-open{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .abtn:disabled{opacity:.4;cursor:default}
 .movegrid{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
 .warnbox{margin-top:9px;background:rgba(255,202,58,.1);border:.5px solid rgba(255,202,58,.35);border-radius:10px;padding:9px 11px;font-size:12.5px;line-height:1.45;color:var(--warn-ink);font-weight:600}
-.errbox{margin-top:9px;background:rgba(255,92,82,.09);border:.5px solid rgba(255,92,82,.3);border-radius:10px;padding:9px 11px;font-size:12.5px;line-height:1.45;color:var(--bad-ink);font-weight:600}
 
 .shiftbadge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;background:var(--chip);color:var(--dim);letter-spacing:.3px;white-space:nowrap}
 
@@ -192,13 +188,18 @@ body.drawer-open{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 /* ============ forms ============ */
 label.fl{display:block;font-size:12px;font-weight:700;color:var(--dim);margin:10px 0 5px}
 input,select,textarea{
-  width:100%;font-size:16px;font-family:inherit;color:var(--text);
+  width:100%;min-width:0;max-width:100%;min-height:46px;font-size:16px;font-family:inherit;color:var(--text);
   background:var(--surface2);border:.5px solid var(--hair);border-radius:11px;padding:11px 12px;
+  transition:border-color .15s ease, box-shadow .15s ease;
 }
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,90,31,.15);outline:none}
+/* iOS/Chrome date & time controls carry a wide intrinsic width that overflows a flex column
+   and paints over the neighbouring field — reset the native appearance so width:100% is honoured. */
+input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none;text-align:left}
 input::placeholder,textarea::placeholder{color:var(--dim);opacity:.7}
 textarea{min-height:58px;resize:vertical}
 .frow{display:flex;gap:10px}
-.frow>div{flex:1}
+.frow>div{flex:1 1 0;min-width:0}
 button.btn{
   width:100%;background:var(--accent);color:#fff;border:0;border-radius:13px;
   padding:14px;font-size:16px;font-weight:800;cursor:pointer;margin-top:14px;min-height:48px;
@@ -245,5 +246,35 @@ button.btn.mini{padding:10px;font-size:14px;margin-top:0;min-height:44px}
   opacity:0;transition:opacity .2s;z-index:70;pointer-events:none;max-width:86%;text-align:center}
 .toast.show{opacity:.96}
 
-a.link{color:var(--accent);font-weight:700;text-decoration:none}
 .footer{text-align:center;color:var(--dim);opacity:.55;font-size:11px;padding:4px 0 6px;font-weight:600}
+
+/* ============ motion & interactions ============ */
+.abtn,button.btn,.drawer-item,.wk .hd,.seg button,.hamburger,.logitem .abtn{
+  transition:transform .12s ease, background .16s ease, border-color .16s ease, box-shadow .16s ease, color .16s ease}
+.abtn:active,button.btn:active,.seg button:active{transform:scale(.965)}
+.drawer-item:active{transform:scale(.98)}
+.wk .hd:active{background:var(--surface2)}
+.stchip{transition:background .18s ease,color .18s ease}
+
+/* staggered entrance — applied only on tab switch (see rerender), never on in-place updates */
+@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes heroIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+#view.anim-in>*{animation:cardIn .44s cubic-bezier(.22,.61,.36,1) both}
+#view.anim-in>.hero{animation:heroIn .5s cubic-bezier(.22,.61,.36,1) both}
+#view.anim-in>*:nth-child(1){animation-delay:0s}
+#view.anim-in>*:nth-child(2){animation-delay:.05s}
+#view.anim-in>*:nth-child(3){animation-delay:.10s}
+#view.anim-in>*:nth-child(4){animation-delay:.145s}
+#view.anim-in>*:nth-child(5){animation-delay:.185s}
+#view.anim-in>*:nth-child(6){animation-delay:.22s}
+#view.anim-in>*:nth-child(7){animation-delay:.25s}
+#view.anim-in>*:nth-child(8){animation-delay:.275s}
+#view.anim-in>*:nth-child(n+9){animation-delay:.3s}
+
+@media (prefers-reduced-motion: reduce){
+  #view.anim-in>*,#view.anim-in>.hero{animation:none}
+  .ring-prog{transition:none}
+  .abtn:active,button.btn:active,.seg button:active,.drawer-item:active{transform:none}
+  #scrim{transition:none}
+  #drawer,#drawer.open{transition:visibility 0s}   /* snap open/closed — no slide */
+}
