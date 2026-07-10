@@ -171,14 +171,14 @@ body::before {
 
 /* ── View shell ──────────────────────────────────────────────────────────── */
 .view {
-  padding: 20px;
+  padding: 24px 20px 32px;
   padding-left: calc(20px + env(safe-area-inset-left));
   padding-right: calc(20px + env(safe-area-inset-right));
   max-width: 640px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 22px; /* generous air between instruments (was 14) */
+  gap: 34px; /* generous air between instruments */
 }
 
 /* ── Cards: elevated modules, not a grey stack ───────────────────────────── */
@@ -187,7 +187,7 @@ body::before {
   background: var(--card-bg);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 20px;
+  padding: 22px;
   box-shadow: var(--elev-hi), var(--elev);
 }
 
@@ -702,6 +702,27 @@ input.check {
   border-radius: 50%;
   background: var(--warn);
   box-shadow: 0 0 8px -1px color-mix(in srgb, var(--warn) 70%, transparent);
+}
+
+/* ── Strength exercise list ──────────────────────────────────────────────── */
+.ex-list { margin: 14px 0 0; }
+.ex-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 2px;
+}
+.ex-list .ex-row + .ex-row { border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+.ex-name { font-weight: 600; }
+.ex-scheme {
+  flex: 0 0 auto;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* ── Reduced motion ──────────────────────────────────────────────────────── */
