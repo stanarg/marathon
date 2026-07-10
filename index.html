@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>BA42</title>
+  <meta name="description" content="BA42 — Stan's personal marathon companion">
+
+  <!-- iOS home-screen surface (§7) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BA42">
+  <meta name="theme-color" content="#0B0F14">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header class="app-header">
+    <button id="menu-btn" class="menu-btn" aria-label="Open menu" aria-controls="drawer" aria-expanded="false">
+      <span class="menu-icon" aria-hidden="true"></span>
+    </button>
+    <span class="app-title">BA42</span>
+  </header>
+
+  <div id="scrim" class="scrim"></div>
+
+  <nav id="drawer" class="drawer" aria-label="Primary" aria-hidden="true">
+    <div class="drawer-head">
+      <span class="drawer-title">BA42</span>
+      <span class="drawer-sub">Marathon companion</span>
+    </div>
+    <a class="tab" href="#/today"    data-tab="today">Today</a>
+    <a class="tab" href="#/plan"     data-tab="plan">Plan</a>
+    <a class="tab" href="#/fuel"     data-tab="fuel">Fuel</a>
+    <a class="tab" href="#/trends"   data-tab="trends">Trends</a>
+    <a class="tab" href="#/settings" data-tab="settings">Settings</a>
+  </nav>
+
+  <main id="view" class="view" aria-live="polite"><!-- rendered by main.js --></main>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
