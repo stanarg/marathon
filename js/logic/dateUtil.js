@@ -28,13 +28,13 @@ export function isValidISODate(s) {
 }
 
 /** Parse "YYYY-MM-DD" to a Date at UTC midnight. Throws on invalid input. */
-export function parse(iso) {
+function parse(iso) {
   if (!isValidISODate(iso)) throw new Error(`invalid ISO date: ${JSON.stringify(iso)}`);
   return new Date(`${iso}T00:00:00Z`);
 }
 
 /** Format a UTC-midnight Date back to "YYYY-MM-DD". */
-export function toISO(date) {
+function toISO(date) {
   return date.toISOString().slice(0, 10);
 }
 
@@ -49,7 +49,7 @@ export function diffDays(a, b) {
 }
 
 /** Day of week as 0=Sun … 6=Sat. */
-export function dayIndex(iso) {
+function dayIndex(iso) {
   return parse(iso).getUTCDay();
 }
 

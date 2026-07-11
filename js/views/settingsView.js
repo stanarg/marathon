@@ -1,6 +1,6 @@
 // settingsView.js — backup export/import, reset, storage status, install, about (§6).
 
-import { el, card, badge, h, muted, kv, button, link } from '../components/ui.js';
+import { el, card, h, muted, kv, button, field } from '../components/ui.js';
 
 // View-local UI state, reset on navigation.
 let resetArmed = false;
@@ -71,13 +71,10 @@ export function render(ctx) {
     h(3, 'Backup'),
     muted('Browser storage can be evicted — export a backup regularly and keep the file safe.'),
     el('div', { class: 'form-actions' }, [button('Export backup', () => downloadBackup(ctx))]),
-    el('label', { class: 'field' }, [
-      el('span', { class: 'field-label', text: 'Import a backup file' }),
-      el('input', {
-        type: 'file', accept: 'application/json,.json', class: 'field-input',
-        onChange: (e) => { if (e.target.files && e.target.files[0]) handleFile(ctx, e.target.files[0]); },
-      }),
-    ]),
+    field('Import a backup file', el('input', {
+      type: 'file', accept: 'application/json,.json', class: 'field-input',
+      onChange: (e) => { if (e.target.files && e.target.files[0]) handleFile(ctx, e.target.files[0]); },
+    })),
   ]);
   if (importError) backup.append(el('p', { class: 'field-error', text: importError }));
   if (pendingImport) {

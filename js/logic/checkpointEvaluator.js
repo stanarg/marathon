@@ -19,9 +19,14 @@ export function evaluate(logs, checkins, workoutPlan, manual = {}) {
   const cp = (workoutPlan && workoutPlan.checkpoint) || {};
   const store = logs || {};
   const log = store[cp.session_id];
+  // Only a COMPLETED log triggers the checkpoint. A missed/converted log carries no
+  // actuals, so it would lock the panel into insufficient_data forever (dot never
+  // clears, decision unreachable) and fire the soreness prompt for a run that never
+  // happened. The athlete can still complete the run later and log it.
+  const completed = log && log.status === 'completed' ? log : null;
 
-  const km = log ? log.actualDistanceKm : undefined;
-  const hr = log ? log.avgHR : undefined;
+  const km = completed ? completed.actualDistanceKm : undefined;
+  const hr = completed ? completed.avgHR : undefined;
   const painFlags = Object.values(store).filter((l) => l.status === 'completed' && (l.painScore ?? 0) >= PAIN_FLAG).length;
 
   const criteria = [
@@ -65,5 +70,5 @@ export function evaluate(logs, checkins, workoutPlan, manual = {}) {
   const outcomes = cp.outcomes || {};
   const outcomeText = outcome === 'insufficient_data' ? null : outcomes[outcome] || null;
 
-  return { criteria, outcome, outcomeText, triggered: !!log };
+  return { criteria, outcome, outcomeText, triggered: !!completed };
 }

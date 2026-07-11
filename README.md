@@ -56,7 +56,7 @@ Run these on the target device (iPhone/Safari) after deploying:
 - [ ] **Log a session** (actuals + HR/RPE/pain) → Plan shows it ✓; an unlogged past
       session shows "unlogged" with one-tap **Missed**.
 - [ ] **Fuel** on **2026-09-19** shows the carb-load checklist; race day shows the
-      race-morning/in-race timeline; hydration `+250 ml` taps accumulate.
+      race-morning/in-race timeline. On **Today**, hydration `+250 ml` taps accumulate.
 - [ ] **Trends** shows weekly planned-vs-done km, RHR/HRV/weight lines; after logging
       `w07s06` the **checkpoint panel** evaluates and lets you record a decision.
 - [ ] **Backup**: Export downloads a JSON file; Import restores it (Settings).
@@ -68,5 +68,5 @@ Run these on the target device (iPhone/Safari) after deploying:
 The three files in `data/` are generated artifacts and are **immutable** — never edit
 them. User data (session logs, check-ins, hydration, weigh-ins, checkpoint, checklist)
 stays in this browser only. Because browser storage can be evicted, the app requests
-persistent storage on install, nags for a backup each Sunday, and offers export/import
-in Settings — keep a recent backup file.
+persistent storage on install, nags for a backup each Sunday (except race morning),
+and offers export/import in Settings — keep a recent backup file.

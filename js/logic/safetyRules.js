@@ -27,8 +27,9 @@ function indexSessions(workoutPlan) {
 
 export function advisories(logs, date, workoutPlan) {
   const out = [];
+  logs = logs || {};
   const index = indexSessions(workoutPlan);
-  const entries = Object.values(logs || {})
+  const entries = Object.values(logs)
     .map((log) => ({ log, ...(index[log.sessionId] || {}) }))
     .filter((e) => e.session);
 
@@ -39,8 +40,11 @@ export function advisories(logs, date, workoutPlan) {
       (e) => e.week && e.week.index === currentWeek.index && e.log.status === 'completed' && (e.log.painScore ?? 0) >= PAIN_FLAG
     );
     if (painFlags.length >= 2) {
+      // Only an UNLOGGED session is convertible: converting writes a wholesale
+      // status log, which would erase a completed session's actuals (and with them
+      // the very pain flag that fired this rule).
       const nextQuality = currentWeek.sessions
-        .filter((s) => s.type === 'run_quality' && s.date >= date)
+        .filter((s) => s.type === 'run_quality' && s.date >= date && !logs[s.id])
         .sort((a, b) => a.date.localeCompare(b.date))[0];
       out.push({
         id: 'weekly_downshift',
@@ -67,7 +71,7 @@ export function advisories(logs, date, workoutPlan) {
       out.push({
         id: 'bone_stress',
         severity: 'critical',
-        text: `Bone-stress signal (${latest.site}): 48 h zero-impact. Rest until ${until}.`,
+        text: `Bone-stress signal (${latest.site}): 48 h zero-impact — no running through ${until} (inclusive).`,
         meta: { site: latest.site, zeroImpactUntil: until },
       });
     }

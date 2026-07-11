@@ -70,4 +70,3 @@ export function createShiftCalendar({ startDate, workSchedule }) {
   return { schedule, workInterval, freeWindows, mealTemplateId };
 }
 
-export { TEMPLATE };

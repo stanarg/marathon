@@ -31,7 +31,6 @@ export function clear(node) {
 export const card = (children, cls = '') => el('div', { class: `card ${cls}`.trim() }, children);
 export const badge = (text, kind = '') => el('span', { class: `badge ${kind}`.trim(), text });
 export const h = (level, text, cls = '') => el(`h${level}`, { class: cls || null, text });
-export const p = (text, cls = '') => el('p', { class: cls || null, text });
 export const muted = (text) => el('p', { class: 'muted', text });
 
 /** A key/value definition list from [[key, value], …]. */
@@ -57,10 +56,18 @@ export function navRow(children, href, cls = '') {
   return el('a', { class: `row ${cls}`.trim(), href }, children);
 }
 
-export function section(title, children) {
-  return card([h(3, title), ...[].concat(children)]);
+/** A labelled form field: label text above the input, optional hint below. */
+export function field(labelText, input, hint) {
+  return el('label', { class: 'field' }, [
+    el('span', { class: 'field-label', text: labelText }),
+    input,
+    hint ? el('span', { class: 'field-hint', text: hint }) : null,
+  ]);
 }
 
-export function emptyState(text) {
-  return el('div', { class: 'empty', text });
+/** Parse a form value to a finite number, or null for empty/junk input. */
+export function parseNum(v) {
+  if (v == null || String(v).trim() === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 }

@@ -2,7 +2,7 @@
 // check-in card / readiness card, day summary, today's session(s), and the fuel
 // card (next meal by clock). Session logging (M4) and hydration (M5) attach later.
 
-import { el, card, badge, h, muted, kv, navRow, button } from '../components/ui.js';
+import { el, card, badge, h, muted, kv, navRow, button, field, parseNum } from '../components/ui.js';
 import { formatKm, formatDuration, formatKcal, formatGrams, humanizeId, formatWindow, formatFluidRangeL } from '../logic/formatters.js';
 import { dayName, compare, diffDays } from '../logic/dateUtil.js';
 
@@ -12,30 +12,24 @@ const DAYTYPE_KIND = {
 };
 const RUN_TYPES = ['run_easy', 'run_strides', 'run_quality', 'long_run'];
 
-// View-local UI state: whether the check-in form is force-shown for editing.
-// Reset on real navigation (a hashchange) so a half-open edit form never persists
-// across routes — but NOT on ctx.refresh() (a same-route re-render), which is a
-// direct render() call and fires no hashchange, so the edit stays open while editing.
+// View-local UI state: whether the check-in form is force-shown for editing, and a
+// draft of whatever is typed into it. The draft survives ctx.refresh() (a same-route
+// re-render — e.g. tapping +250 ml mid-entry would otherwise wipe the form) and is
+// cleared on save/skip/cancel and on real navigation (a hashchange).
 let editingCheckin = false;
+let checkinDraft = null;
 if (typeof window !== 'undefined') {
-  window.addEventListener('hashchange', () => { editingCheckin = false; });
+  window.addEventListener('hashchange', () => { editingCheckin = false; checkinDraft = null; });
 }
 
-function parseNum(v) {
-  if (v == null || String(v).trim() === '') return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
+const STATUS_BADGE = {
+  completed: { kind: 'badge-ok', label: '✓ done' },
+  missed: { kind: 'badge-danger', label: 'missed' },
+  converted_easy: { kind: 'badge-warn', label: 'converted' },
+  converted_cross: { kind: 'badge-warn', label: 'converted' },
+};
 
-function field(labelText, input, hint) {
-  return el('label', { class: 'field' }, [
-    el('span', { class: 'field-label', text: labelText }),
-    input,
-    hint ? el('span', { class: 'field-hint', text: hint }) : null,
-  ].filter(Boolean));
-}
-
-export function sessionRow(session) {
+function sessionRow(session, log) {
   const left = el('div', { class: 'row-lead' }, [
     el('span', { class: 'row-window', text: `${formatWindow(session.window)} ${session.start_time}` }),
   ]);
@@ -43,11 +37,16 @@ export function sessionRow(session) {
   if (session.distance_km != null) parts.push(formatKm(session.distance_km));
   parts.push(formatDuration(session.duration_min));
   if (session.zone) parts.push(session.zone);
+  const status = log && STATUS_BADGE[log.status];
   const body = el('div', { class: 'row-body' }, [
     el('span', { class: 'row-title', text: session.title }),
     muted(parts.join(' · ')),
   ]);
-  return navRow([left, body, el('span', { class: 'row-chev', text: '›' })], `#/session/${session.id}`);
+  return navRow([
+    left, body,
+    status ? badge(status.label, status.kind) : null,
+    el('span', { class: 'row-chev', text: '›' }),
+  ], `#/session/${session.id}`);
 }
 
 function nextMeal(meals, clock) {
@@ -82,12 +81,26 @@ function renderAdvisory(ctx, adv) {
 function renderCheckInForm(ctx, existing) {
   const date = ctx.today();
   const isEdit = !!existing; // editing an already-saved check-in vs the first entry today
-  const rhr = el('input', { type: 'number', inputmode: 'numeric', min: '30', max: '120', class: 'field-input', placeholder: 'e.g. 51', value: existing && existing.rhr != null ? existing.rhr : null });
-  const sleep = el('input', { type: 'number', inputmode: 'decimal', step: '0.5', min: '0', max: '16', class: 'field-input', placeholder: 'e.g. 7.5', value: existing && existing.sleepHours != null ? existing.sleepHours : null });
-  const hrv = el('input', { type: 'number', inputmode: 'numeric', min: '0', max: '300', class: 'field-input', placeholder: 'optional', value: existing && existing.hrvMs != null ? existing.hrvMs : null });
   const existingWeight = ctx.weighins()[date];
-  const weight = el('input', { type: 'number', inputmode: 'decimal', step: '0.1', min: '40', max: '200', class: 'field-input', placeholder: 'e.g. 90.3', value: existingWeight != null ? existingWeight : null });
+
+  // Prefill order: in-progress draft (survives same-route re-renders) → saved value.
+  const draft = checkinDraft || {};
+  const pre = (draftVal, savedVal) => (draftVal !== undefined ? draftVal : (savedVal != null ? savedVal : null));
+  const track = (key) => (e) => { checkinDraft = { ...(checkinDraft || {}), [key]: e.target.value }; };
+
+  const rhr = el('input', { type: 'number', inputmode: 'numeric', min: '30', max: '120', class: 'field-input', placeholder: 'e.g. 51', value: pre(draft.rhr, existing && existing.rhr), onInput: track('rhr') });
+  const sleep = el('input', { type: 'number', inputmode: 'decimal', step: '0.5', min: '0', max: '16', class: 'field-input', placeholder: 'e.g. 7.5', value: pre(draft.sleep, existing && existing.sleepHours), onInput: track('sleep') });
+  const hrv = el('input', { type: 'number', inputmode: 'numeric', min: '0', max: '300', class: 'field-input', placeholder: 'optional', value: pre(draft.hrv, existing && existing.hrvMs), onInput: track('hrv') });
+  const weight = el('input', { type: 'number', inputmode: 'decimal', step: '0.1', min: '40', max: '200', class: 'field-input', placeholder: 'e.g. 90.3', value: pre(draft.weight, existingWeight), onInput: track('weight') });
   const err = el('p', { class: 'field-error', hidden: true });
+
+  // Weight persists independently of the check-in: typed → saved; cleared while a
+  // weigh-in exists → removed (the only way to delete a mistyped weight).
+  const persistWeight = () => {
+    const w = parseNum(weight.value);
+    if (w != null) ctx.saveWeighIn(date, w);
+    else if (existingWeight != null && String(weight.value).trim() === '') ctx.saveWeighIn(date, null);
+  };
 
   const save = button('Save check-in', () => {
     const r = parseNum(rhr.value);
@@ -97,16 +110,17 @@ function renderCheckInForm(ctx, existing) {
       return;
     }
     ctx.saveCheckin({ date, rhr: r, sleepHours: parseNum(sleep.value), hrvMs: parseNum(hrv.value) });
-    const w = parseNum(weight.value);
-    if (w != null) ctx.saveWeighIn(date, w);
+    persistWeight();
     editingCheckin = false;
+    checkinDraft = null;
     ctx.refresh();
   });
-  // First entry today → "Skip today" (records an unknown check-in so it stops nagging).
+  // First entry today → "Skip today" (records an unknown check-in so it stops nagging;
+  // still persists a typed weight so it isn't silently discarded).
   // Editing an existing entry → "Cancel" (non-destructive; never wipes saved metrics).
   const secondary = isEdit
-    ? button('Cancel', () => { editingCheckin = false; ctx.refresh(); }, 'btn-ghost')
-    : button('Skip today', () => { ctx.saveCheckin({ date }); editingCheckin = false; ctx.refresh(); }, 'btn-ghost');
+    ? button('Cancel', () => { editingCheckin = false; checkinDraft = null; ctx.refresh(); }, 'btn-ghost')
+    : button('Skip today', () => { ctx.saveCheckin({ date }); persistWeight(); editingCheckin = false; checkinDraft = null; ctx.refresh(); }, 'btn-ghost');
 
   return card([
     el('div', { class: 'card-head' }, [h(3, isEdit ? 'Edit check-in' : 'Morning check-in'), badge('today', '')]),
@@ -344,8 +358,9 @@ export function render(ctx) {
 
   // --- Session(s) ---------------------------------------------------------
   if (dp.sessions.length) {
+    const logs = ctx.sessionLogs();
     const sc = card([h(3, dp.sessions.length > 1 ? "Today's sessions" : "Today's session")]);
-    for (const s of dp.sessions) sc.append(sessionRow(s));
+    for (const s of dp.sessions) sc.append(sessionRow(s, logs[s.id]));
     wrap.append(sc);
   } else {
     const restCard = card([h(3, "Today's session"), muted('Rest day — no session scheduled.')], 'sub');
@@ -363,19 +378,15 @@ export function render(ctx) {
   }
 
   // --- Fuel (next meal by clock) -----------------------------------------
-  if (dp.raceTimeline) {
-    const rm = dp.raceTimeline.race_morning || {};
-    wrap.append(card([
-      el('div', { class: 'card-head' }, [h(3, 'Race day'), badge('RACE', 'badge-danger')]),
-      muted(`Wake ${rm.wake} · breakfast ${rm.breakfast ? rm.breakfast.time : ''} · see Fuel for the full timeline.`),
-      navRow([el('span', { class: 'row-title', text: 'Open race-day timeline' }), el('span', { class: 'row-chev', text: '›' })], '#/fuel'),
-    ]));
-  } else {
+  // On race day the headline card at the top already carries wake/breakfast and the
+  // Fuel link — a second race card here was a duplicate, so it is skipped entirely.
+  if (!dp.raceTimeline) {
     const nm = nextMeal(dp.meals, clock);
     const fuel = card([el('div', { class: 'card-head' }, [h(3, 'Fuel'), badge(dp.mealTemplateId ? humanizeId(dp.mealTemplateId) : 'No template', '')])]);
     if (nm) {
+      const isPast = nm.time < clock; // fallback case: the day's last meal already happened
       fuel.append(el('div', { class: 'next-meal' }, [
-        muted('Next meal'),
+        muted(isPast ? 'Last meal today (done)' : 'Next meal'),
         el('div', { class: 'row-body' }, [
           el('span', { class: 'row-title', text: `${nm.time} · ${nm.label}` }),
           muted(`${formatGrams(nm.carb_g)} carbs · ${formatGrams(nm.protein_g)} protein`),

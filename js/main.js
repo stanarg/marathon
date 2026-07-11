@@ -142,11 +142,13 @@ function buildContext(plans, store, dp) {
     store.set('hydration', all);
   };
 
-  // Weigh-ins (§1/§4): Sunday pre-long-run weight.
+  // Weigh-ins (§1/§4): Sunday pre-long-run weight. Passing kg=null removes the
+  // entry — the only way to delete a mistyped weigh-in.
   ctx.weighins = () => store.get('weighins') || {};
   ctx.saveWeighIn = (date, kg) => {
     const all = { ...ctx.weighins() };
-    all[date] = kg;
+    if (kg == null) delete all[date];
+    else all[date] = kg;
     store.set('weighins', all);
   };
 
@@ -330,5 +332,3 @@ if (typeof document !== 'undefined') {
     startApp();
   }
 }
-
-export { boot };

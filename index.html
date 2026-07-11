@@ -7,6 +7,7 @@
   <meta name="description" content="BA42 — Stan's personal marathon companion">
 
   <!-- iOS home-screen surface (§7) -->
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="BA42">
@@ -39,7 +40,9 @@
     <a class="tab" href="#/settings" data-tab="settings">Settings</a>
   </nav>
 
-  <main id="view" class="view" aria-live="polite"><!-- rendered by main.js --></main>
+  <!-- No aria-live here: every render replaces the whole subtree, so a live region
+       would make VoiceOver re-announce the entire page after each interaction. -->
+  <main id="view" class="view"><!-- rendered by main.js --></main>
 
   <script type="module" src="js/main.js"></script>
 </body>

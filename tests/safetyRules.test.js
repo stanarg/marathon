@@ -97,3 +97,32 @@ test('missed/converted logs never contribute pain flags (status guard)', () => {
 test('no logs → no advisories', () => {
   assert.deepEqual(advisories({}, '2026-08-18', workoutPlan), []);
 });
+
+test('null/undefined logs → no advisories (no throw)', () => {
+  assert.deepEqual(advisories(null, '2026-08-18', workoutPlan), []);
+  assert.deepEqual(advisories(undefined, '2026-08-18', workoutPlan), []);
+});
+
+test('downshift never targets an already-logged quality session (data-loss guard)', () => {
+  // Realistic firing moment: the 2nd pain flag comes from logging TODAY's quality run.
+  // Converting that completed log would wholesale-replace it, erasing the actuals and
+  // the pain flag itself — so the action must be omitted when no unlogged quality remains.
+  const logs = {
+    w06s02: { sessionId: 'w06s02', status: 'completed', painScore: 3 },
+    w06s04: { sessionId: 'w06s04', status: 'completed', painScore: 3, actualDistanceKm: 10, avgHR: 155 },
+  };
+  const advs = advisories(logs, '2026-08-20', workoutPlan); // w06s04's own date
+  const ds = advs.find((a) => a.id === 'weekly_downshift');
+  assert.ok(ds, 'advisory itself still fires');
+  assert.equal(ds.suggestedAction, undefined, 'no convert action for a logged session');
+
+  // Same guard for a converted (non-completed) log: still not a target.
+  const logs2 = {
+    w06s01: { sessionId: 'w06s01', status: 'completed', painScore: 3 },
+    w06s02: { sessionId: 'w06s02', status: 'completed', painScore: 3 },
+    w06s04: { sessionId: 'w06s04', status: 'converted_easy' },
+  };
+  const ds2 = advisories(logs2, '2026-08-18', workoutPlan).find((a) => a.id === 'weekly_downshift');
+  assert.ok(ds2);
+  assert.equal(ds2.suggestedAction, undefined);
+});

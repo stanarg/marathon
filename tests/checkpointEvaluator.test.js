@@ -50,6 +50,23 @@ test('not triggered before the checkpoint run is logged', () => {
   assert.equal(r.outcome, 'insufficient_data');
 });
 
+test('a missed or converted checkpoint log does NOT trigger the checkpoint', () => {
+  // A non-completed log has no actuals — triggering would dead-end the panel in
+  // insufficient_data (decision unreachable, drawer dot stuck) and fire the
+  // soreness prompt for a run that never happened.
+  for (const status of ['missed', 'converted_cross', 'converted_easy']) {
+    const r = evaluate({ w07s06: { sessionId: 'w07s06', status } }, {}, workoutPlan, {});
+    assert.equal(r.triggered, false, `status=${status} must not trigger`);
+  }
+  // Re-logging it as completed afterwards triggers normally.
+  const done = evaluate(
+    { w07s06: { sessionId: 'w07s06', status: 'completed', actualDistanceKm: 23, avgHR: 148, painScore: 0 } },
+    {}, workoutPlan, manualAllOk
+  );
+  assert.equal(done.triggered, true);
+  assert.equal(done.outcome, 'pass');
+});
+
 test('clean pass + margin tick → exceed / "revise to 4:35"', () => {
   const logs = { w07s06: { sessionId: 'w07s06', status: 'completed', actualDistanceKm: 23, avgHR: 148, painScore: 0 } };
   const r = evaluate(logs, {}, workoutPlan, { ...manualAllOk, marginOk: true });

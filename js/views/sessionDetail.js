@@ -2,7 +2,7 @@
 // The form pre-fills PLANNED distance/duration; Stan overwrites with actuals from
 // his watch, adds HR/RPE/pain, and saves → completed. "Mark missed" is also here.
 
-import { el, card, badge, h, muted, kv, link, button } from '../components/ui.js';
+import { el, card, badge, h, muted, kv, link, button, field, parseNum } from '../components/ui.js';
 import { formatKm, formatDuration, humanizeId, formatWindow, formatGrams } from '../logic/formatters.js';
 import { dayName } from '../logic/dateUtil.js';
 import { strengthDetail } from '../logic/strengthProgram.js';
@@ -25,11 +25,9 @@ const STATUS_BADGE = {
   converted_cross: { kind: 'badge-warn', label: 'Converted → Z1 cross' },
 };
 
-function parseNum(v) {
-  if (v == null || String(v).trim() === '') return undefined;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : undefined;
-}
+// Shared parseNum returns null; the log payload wants undefined so that empty fields
+// are DROPPED by JSON.stringify instead of stored as nulls.
+const numOrUndef = (v) => parseNum(v) ?? undefined;
 
 function findSession(workoutPlan, id) {
   for (const wk of workoutPlan.weeks) {
@@ -41,13 +39,13 @@ function findSession(workoutPlan, id) {
 
 function numberField(label, value, attrs = {}) {
   const input = el('input', { type: 'number', inputmode: 'decimal', class: 'field-input', value: value != null ? value : null, ...attrs });
-  return { input, node: el('label', { class: 'field' }, [el('span', { class: 'field-label', text: label }), input]) };
+  return { input, node: field(label, input) };
 }
 
 function selectField(label, options, value) {
   const select = el('select', { class: 'field-input' },
     options.map((o) => el('option', { value: o.value, selected: o.value === (value || '') ? '' : null }, [o.label])));
-  return { input: select, node: el('label', { class: 'field' }, [el('span', { class: 'field-label', text: label }), select]) };
+  return { input: select, node: field(label, select) };
 }
 
 function renderLogForm(ctx, session, existing) {
@@ -75,16 +73,16 @@ function renderLogForm(ctx, session, existing) {
   fields.site = selectField('Pain site', PAIN_SITES, log.painSite);
   nodes.push(fields.rpe.node, fields.pain.node, fields.site.node);
   const notesInput = el('textarea', { class: 'field-input', rows: '2', placeholder: isStrength ? 'e.g. loads used, how it felt' : 'optional' }, [log.notes || '']);
-  nodes.push(el('label', { class: 'field' }, [el('span', { class: 'field-label', text: 'Notes' }), notesInput]));
+  nodes.push(field('Notes', notesInput));
 
   const save = button('Save as completed', () => {
     ctx.saveSessionLog(session.id, {
       status: 'completed',
-      actualDistanceKm: fields.dist ? parseNum(fields.dist.input.value) : undefined,
-      actualDurationMin: parseNum(fields.dur.input.value),
-      avgHR: fields.avg ? parseNum(fields.avg.input.value) : undefined,
-      maxHR: fields.max ? parseNum(fields.max.input.value) : undefined,
-      rpe: parseNum(fields.rpe.input.value),
+      actualDistanceKm: fields.dist ? numOrUndef(fields.dist.input.value) : undefined,
+      actualDurationMin: numOrUndef(fields.dur.input.value),
+      avgHR: fields.avg ? numOrUndef(fields.avg.input.value) : undefined,
+      maxHR: fields.max ? numOrUndef(fields.max.input.value) : undefined,
+      rpe: numOrUndef(fields.rpe.input.value),
       painScore: parseNum(fields.pain.input.value) ?? 0,
       painSite: fields.site.input.value || undefined,
       notes: notesInput.value.trim() || undefined,

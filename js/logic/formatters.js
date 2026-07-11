@@ -18,15 +18,6 @@ export function formatDuration(min) {
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
 
-/** Seconds-per-km → "5:30/km". */
-export function formatPace(secPerKm) {
-  if (secPerKm == null) return '—';
-  const s = Math.round(secPerKm);
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return `${m}:${String(r).padStart(2, '0')}/km`;
-}
-
 /** Energy: 3450 → "3,450 kcal", null → "—". */
 export function formatKcal(kcal) {
   if (kcal == null) return '—';

@@ -2,19 +2,13 @@
 // timeline, session-fueling card, day macros, hydration guidance and weigh-in.
 // In race week (W10) the carb-load checklist + race-day timeline are pinned on top.
 
-import { el, card, badge, h, muted, kv, button } from '../components/ui.js';
-import { formatKm, formatKcal, formatGrams, humanizeId, formatFluidRangeL } from '../logic/formatters.js';
+import { el, card, badge, h, muted, kv, button, field, parseNum } from '../components/ui.js';
+import { formatKcal, formatGrams, humanizeId, formatFluidRangeL } from '../logic/formatters.js';
 
 // Selected date is view-local; reset to "today" on navigation (like todayView's edit flag).
 let fuelDate = null;
 if (typeof window !== 'undefined') {
   window.addEventListener('hashchange', () => { fuelDate = null; });
-}
-
-function parseNum(v) {
-  if (v == null || String(v).trim() === '') return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
 }
 
 // Keep the default date inside the picker's own [start, race] bounds so the widget
@@ -88,14 +82,15 @@ function renderWeightCard(ctx, date) {
   const input = el('input', { type: 'number', inputmode: 'decimal', step: '0.1', min: '40', max: '200', class: 'field-input', value: existing != null ? existing : null, placeholder: 'e.g. 90.3' });
   const save = button(existing != null ? 'Update weight' : 'Save weight', () => {
     const kg = parseNum(input.value);
-    if (kg == null) return;
-    ctx.saveWeighIn(date, kg);
+    if (kg != null) ctx.saveWeighIn(date, kg);
+    else if (existing != null && String(input.value).trim() === '') ctx.saveWeighIn(date, null); // cleared → remove
+    else return;
     ctx.refresh();
   });
   return card([
     h(3, 'Weigh-in'),
-    muted(existing != null ? `Recorded: ${existing} kg` : 'Not recorded for this day.'),
-    el('label', { class: 'field' }, [el('span', { class: 'field-label', text: 'Weight (kg)' }), input]),
+    muted(existing != null ? `Recorded: ${existing} kg — clear the field and update to remove.` : 'Not recorded for this day.'),
+    field('Weight (kg)', input),
     el('div', { class: 'form-actions' }, [save]),
   ], 'sub');
 }
@@ -106,15 +101,24 @@ export function render(ctx) {
   const dp = ctx.dayPlan(selected);
   const wrap = el('div', {});
 
-  // Date picker
+  // Date picker. iOS fires `change` on every wheel tick while its popover is open;
+  // re-rendering immediately would destroy the input and dismiss the popover mid-scroll,
+  // so while the picker holds focus the refresh is deferred until blur (dismissal).
   const picker = el('input', {
     type: 'date', class: 'field-input', value: selected,
     min: workoutPlan.start_date, max: workoutPlan.race.date,
-    onChange: (e) => { fuelDate = e.target.value || null; ctx.refresh(); },
+    onChange: (e) => {
+      fuelDate = e.target.value || null;
+      if (document.activeElement === e.target) {
+        e.target.addEventListener('blur', () => ctx.refresh(), { once: true });
+      } else {
+        ctx.refresh();
+      }
+    },
   });
   wrap.append(card([
     el('div', { class: 'card-head' }, [h(2, 'Fuel'), badge(humanizeId(dp.dayType), '')]),
-    el('label', { class: 'field' }, [el('span', { class: 'field-label', text: 'Date' }), picker]),
+    field('Date', picker),
   ]));
 
   // Race-week pinned block

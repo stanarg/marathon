@@ -14,7 +14,7 @@
   --surface-2: #18212C;       /* recessed wells / sub-panels / tracks */
   --line: #253140;            /* crisp cool hairline */
   --text: #EAF1F8;            /* near-white, faint cool tint */
-  --muted: #8394A6;           /* cool slate */
+  --muted: #8FA2B6;           /* cool slate — ≥4.5:1 even on the card gradient's lightened top */
   --accent: #4CD6FF;          /* living cyan telemetry accent */
   --ok: #3DDC97;              /* signal green */
   --warn: #FFB454;            /* amber */
@@ -49,10 +49,10 @@
     --line: #D6DFE8;
     --text: #0E1621;
     --muted: #566472;
-    --accent: #0C86D6;       /* deeper cyan — legible as a data line AND a button fill */
+    --accent: #0A6FB4;       /* deeper cyan — ≥4.5:1 both as small-text ink on white AND under white button labels */
     --ok: #0E9E63;
     --warn: #B5730A;
-    --danger: #DB423B;
+    --danger: #CE352E;       /* deep enough that white button labels clear WCAG AA */
     --radius: 20px;
     --header-h: 48px;
 
@@ -366,7 +366,10 @@ body::before {
   backdrop-filter: blur(24px) saturate(160%);
   border-right: 1px solid var(--line);
   transform: translateX(-100%);
-  transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* visibility keeps the closed drawer's links out of the keyboard tab order
+     (it is aria-hidden); the 0.28s delay lets the slide-out finish first. */
+  visibility: hidden;
+  transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1), visibility 0s 0.28s;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -375,6 +378,8 @@ body::before {
 }
 .drawer.open {
   transform: translateX(0);
+  visibility: visible;
+  transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1), visibility 0s;
   /* Only cast the edge shadow while open — off-screen it bled onto the content's left edge. */
   box-shadow: 26px 0 60px -22px rgba(0, 0, 0, 0.7);
 }
@@ -464,7 +469,8 @@ a.row:active { background: var(--surface-2); border-radius: 12px; }
 
 .back-link {
   display: inline-block;
-  margin-bottom: 8px;
+  margin-bottom: 2px;
+  padding: 8px 12px 8px 0; /* ≥40px hit area without moving the visual baseline much */
   color: var(--accent);
   text-decoration: none;
   font-size: 0.9rem;
@@ -479,7 +485,6 @@ a.row:active { background: var(--surface-2); border-radius: 12px; }
   font-style: italic;
 }
 .next-meal { margin-top: 4px; }
-.empty { color: var(--muted); padding: 10px 0; }
 
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
 .btn {
@@ -527,7 +532,7 @@ a.row:active { background: var(--surface-2); border-radius: 12px; }
   color: var(--accent);
   font-size: 0.9rem;
   font-weight: 600;
-  padding: 10px 0 0;
+  padding: 14px 12px 10px 0; /* ~44px hit area for a daily-use control */
   cursor: pointer;
   align-self: flex-start;
   -webkit-tap-highlight-color: transparent;
@@ -612,7 +617,7 @@ textarea.field-input {
 .row-link { -webkit-tap-highlight-color: transparent; }
 .row-link:active { background: var(--surface-2); border-radius: 12px; }
 .row-tail { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: 0 0 auto; }
-.btn-sm { padding: 7px 12px; font-size: 0.82rem; border-radius: 10px; }
+.btn-sm { padding: 11px 14px; font-size: 0.82rem; border-radius: 10px; } /* ≥40px tap height — it writes a "missed" log */
 
 /* ── Hydration meter (recessed well + lit fill) ──────────────────────────── */
 .meter {
@@ -740,6 +745,23 @@ input.check {
   color: var(--accent);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* ── Light-mode WCAG AA ink fixes ────────────────────────────────────────────
+   Placed after every component rule so the equal-specificity cascade resolves to
+   these. Mirrors the tinted-badge treatment: deepen colored inks on white, and
+   flatten the button gradients (the 14% white top-stop diluted the fill below AA
+   under the white label — 6% keeps the sheen). */
+@media (prefers-color-scheme: light) {
+  .reason-list li { color: color-mix(in srgb, var(--warn) 72%, #000); }
+  .error-list li { color: color-mix(in srgb, var(--danger) 70%, #000); }
+  .btn {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 94%, #ffffff 6%), var(--accent));
+  }
+  .btn-ghost { background: transparent; }
+  .btn-danger {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--danger) 94%, #ffffff 6%), var(--danger));
+  }
 }
 
 /* ── Reduced motion ──────────────────────────────────────────────────────── */

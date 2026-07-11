@@ -10,7 +10,7 @@
 
 import { isValidISODate, isMonday, addDays } from './dateUtil.js';
 
-export const SESSION_TYPES = [
+const SESSION_TYPES = [
   'cross',
   'run_easy',
   'run_strides',
@@ -19,7 +19,7 @@ export const SESSION_TYPES = [
   'strength',
   'race',
 ];
-export const SESSION_WINDOWS = ['am', 'pm'];
+const SESSION_WINDOWS = ['am', 'pm'];
 const ID_RE = /^w\d{2}s\d{2}$/;
 
 /**

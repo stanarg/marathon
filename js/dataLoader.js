@@ -42,4 +42,3 @@ export async function loadPlans(fetchImpl = fetch) {
   return { workoutPlan, nutritionPlan, athleteProfile };
 }
 
-export const DATA_FILES = FILES;
