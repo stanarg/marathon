@@ -3,7 +3,7 @@
 //
 // All URLs are relative to the sw scope so it works at username.github.io/ba42/.
 
-const CACHE = 'ba42-v3';
+const CACHE = 'ba42-v6';
 
 const ASSETS = [
   'index.html',

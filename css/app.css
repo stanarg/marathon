@@ -21,6 +21,7 @@
   --danger: #FF6E6E;          /* coral-red */
   --radius: 20px;
   --header-h: 48px;
+  --card-gap: 32px;           /* vertical space between stacked cards */
 
   /* — helpers (not part of the fixed inventory) — */
   --accent-2: #8A7CFF;        /* violet companion — only inside gradients/glows */
@@ -178,7 +179,7 @@ body::before {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 34px; /* generous air between instruments */
+  gap: var(--card-gap);
 }
 
 /* ── Cards: elevated modules, not a grey stack ───────────────────────────── */
@@ -190,6 +191,9 @@ body::before {
   padding: 22px;
   box-shadow: var(--elev-hi), var(--elev);
 }
+/* Real spacing between stacked cards. Views wrap their cards in a <div>, so the
+   .view flex `gap` never reaches them — space adjacent cards directly instead. */
+.view .card + .card { margin-top: var(--card-gap); }
 
 /* Recessed sub-panel: sits inside/among cards, reads as a well (no ambient lift). */
 .card.sub {
@@ -205,14 +209,24 @@ body::before {
     radial-gradient(130% 90% at 50% -30%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 62%),
     var(--card-bg);
 }
+/* Section marker: a FULL-WIDTH accent line. On the first card of a screen it sits on
+   the card's top edge (a header rule); between sections it floats centered in the gap
+   above so it reads as a clean divider instead of hugging the rounded corners. */
 .card:has(h2)::before {
   content: "";
   position: absolute;
-  left: 0; right: 0; top: 0;
+  left: 0;
+  right: 0;
+  top: 0;
   height: 2px;
-  border-radius: var(--radius) var(--radius) 0 0;
+  border-radius: 999px;
   background: var(--accent-grad);
   box-shadow: 0 0 16px -2px var(--glow);
+}
+.view > * > .card:has(h2):not(:first-child)::before,
+.view > .card:has(h2):not(:first-child)::before {
+  top: calc(-0.5 * var(--card-gap) - 1px); /* centered in the gap above */
+  height: 3px;
 }
 
 .card h2 {
