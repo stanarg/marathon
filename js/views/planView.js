@@ -67,7 +67,7 @@ export function renderWeek(ctx, index) {
     ]);
     const body = el('div', { class: 'row-body' }, [
       el('span', { class: 'row-title', text: s.title }),
-      muted(`${formatKm(s.distance_km)} · ${formatDuration(s.duration_min)}`),
+      muted(s.distance_km != null ? `${formatKm(s.distance_km)} · ${formatDuration(s.duration_min)}` : formatDuration(s.duration_min)),
     ]);
     const info = el('a', { class: 'row-link', href: `#/session/${s.id}` }, [lead, body]);
 

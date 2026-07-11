@@ -5,6 +5,7 @@
 import { el, card, badge, h, muted, kv, link, button } from '../components/ui.js';
 import { formatKm, formatDuration, humanizeId, formatWindow, formatGrams } from '../logic/formatters.js';
 import { dayName } from '../logic/dateUtil.js';
+import { strengthDetail } from '../logic/strengthProgram.js';
 
 const PAIN_SITES = [
   { value: '', label: 'None' },
@@ -51,25 +52,41 @@ function selectField(label, options, value) {
 
 function renderLogForm(ctx, session, existing) {
   const log = existing || {};
-  const dist = numberField('Distance (km)', log.actualDistanceKm != null ? log.actualDistanceKm : session.distance_km, { step: '0.1', min: '0' });
-  const dur = numberField('Duration (min)', log.actualDurationMin != null ? log.actualDurationMin : session.duration_min, { step: '1', min: '0' });
-  const avg = numberField('Avg HR (bpm)', log.avgHR, { min: '0', max: '250' });
-  const max = numberField('Max HR (bpm)', log.maxHR, { min: '0', max: '250' });
-  const rpe = numberField('RPE (1–10)', log.rpe, { min: '1', max: '10' });
-  const pain = numberField('Pain (0–10)', log.painScore != null ? log.painScore : 0, { min: '0', max: '10' });
-  const site = selectField('Pain site', PAIN_SITES, log.painSite);
-  const notesInput = el('textarea', { class: 'field-input', rows: '2', placeholder: 'optional' }, [log.notes || '']);
+  const isStrength = session.type === 'strength';
+  const hasDistance = session.distance_km != null; // runs + race carry km; cross/strength don't
+  const showHR = !isStrength; // runs + cross are HR-driven; strength isn't
+
+  // Build only the fields that make sense for this session type.
+  const fields = {};
+  const nodes = [];
+  if (hasDistance) {
+    fields.dist = numberField('Distance (km)', log.actualDistanceKm != null ? log.actualDistanceKm : session.distance_km, { step: '0.1', min: '0' });
+    nodes.push(fields.dist.node);
+  }
+  fields.dur = numberField('Duration (min)', log.actualDurationMin != null ? log.actualDurationMin : session.duration_min, { step: '1', min: '0' });
+  nodes.push(fields.dur.node);
+  if (showHR) {
+    fields.avg = numberField('Avg HR (bpm)', log.avgHR, { min: '0', max: '250' });
+    fields.max = numberField('Max HR (bpm)', log.maxHR, { min: '0', max: '250' });
+    nodes.push(fields.avg.node, fields.max.node);
+  }
+  fields.rpe = numberField('RPE (1–10)', log.rpe, { min: '1', max: '10' });
+  fields.pain = numberField('Pain (0–10)', log.painScore != null ? log.painScore : 0, { min: '0', max: '10' });
+  fields.site = selectField('Pain site', PAIN_SITES, log.painSite);
+  nodes.push(fields.rpe.node, fields.pain.node, fields.site.node);
+  const notesInput = el('textarea', { class: 'field-input', rows: '2', placeholder: isStrength ? 'e.g. loads used, how it felt' : 'optional' }, [log.notes || '']);
+  nodes.push(el('label', { class: 'field' }, [el('span', { class: 'field-label', text: 'Notes' }), notesInput]));
 
   const save = button('Save as completed', () => {
     ctx.saveSessionLog(session.id, {
       status: 'completed',
-      actualDistanceKm: parseNum(dist.input.value),
-      actualDurationMin: parseNum(dur.input.value),
-      avgHR: parseNum(avg.input.value),
-      maxHR: parseNum(max.input.value),
-      rpe: parseNum(rpe.input.value),
-      painScore: parseNum(pain.input.value) ?? 0,
-      painSite: site.input.value || undefined,
+      actualDistanceKm: fields.dist ? parseNum(fields.dist.input.value) : undefined,
+      actualDurationMin: parseNum(fields.dur.input.value),
+      avgHR: fields.avg ? parseNum(fields.avg.input.value) : undefined,
+      maxHR: fields.max ? parseNum(fields.max.input.value) : undefined,
+      rpe: parseNum(fields.rpe.input.value),
+      painScore: parseNum(fields.pain.input.value) ?? 0,
+      painSite: fields.site.input.value || undefined,
       notes: notesInput.value.trim() || undefined,
     });
     ctx.refresh();
@@ -78,12 +95,28 @@ function renderLogForm(ctx, session, existing) {
 
   return card([
     el('div', { class: 'card-head' }, [h(3, existing && existing.status === 'completed' ? 'Edit log' : 'Log this session')]),
-    muted('Pre-filled with planned values — overwrite with your watch actuals.'),
-    el('div', { class: 'field-grid' }, [
-      dist.node, dur.node, avg.node, max.node, rpe.node, pain.node, site.node,
-      el('label', { class: 'field' }, [el('span', { class: 'field-label', text: 'Notes' }), notesInput]),
-    ]),
+    muted(isStrength ? 'Log how it went — put sets and loads in the notes.' : 'Pre-filled with planned values — overwrite with your watch actuals.'),
+    el('div', { class: 'field-grid' }, nodes),
     el('div', { class: 'form-actions' }, [save, miss]),
+  ]);
+}
+
+// Strength workout card (§7 regimen) — what to actually do in the gym.
+function renderStrengthWorkout(session) {
+  const d = strengthDetail(session);
+  if (!d) return null;
+  const list = el('div', { class: 'ex-list' });
+  for (const ex of d.exercises) {
+    list.append(el('div', { class: 'ex-row' }, [
+      el('span', { class: 'ex-name', text: ex.name }),
+      el('span', { class: 'ex-scheme', text: ex.scheme }),
+    ]));
+  }
+  return card([
+    el('div', { class: 'card-head' }, [h(3, 'Strength workout'), badge(d.program, '')]),
+    muted(d.purpose),
+    list,
+    el('p', { class: 'note', text: d.note }),
   ]);
 }
 
@@ -104,11 +137,11 @@ export function render(ctx, id) {
     muted(`${dayName(s.date)} ${s.date} · ${formatWindow(s.window)} ${s.start_time}`),
   ]));
 
-  // Prescription
+  // Prescription (Distance is hidden for non-distance sessions like strength/cross)
   wrap.append(card([
     h(3, 'Prescription'),
     kv([
-      ['Distance', formatKm(s.distance_km)],
+      ['Distance', s.distance_km != null ? formatKm(s.distance_km) : null],
       ['Duration', formatDuration(s.duration_min)],
       ['Zone', s.zone],
       ['HR cap', s.hr_cap_bpm != null ? `${s.hr_cap_bpm} bpm` : null],
@@ -118,7 +151,11 @@ export function render(ctx, id) {
     s.notes ? el('p', { class: 'note', text: s.notes }) : null,
   ].filter(Boolean)));
 
-  // Log form (pre-filled)
+  // Strength workout (only for strength sessions) — the actual gym regimen (§7).
+  const strengthCard = renderStrengthWorkout(s);
+  if (strengthCard) wrap.append(strengthCard);
+
+  // Log form (pre-filled, tailored to the session type)
   wrap.append(renderLogForm(ctx, s, log));
 
   // Fuel context for the day

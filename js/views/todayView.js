@@ -39,9 +39,13 @@ export function sessionRow(session) {
   const left = el('div', { class: 'row-lead' }, [
     el('span', { class: 'row-window', text: `${formatWindow(session.window)} ${session.start_time}` }),
   ]);
+  const parts = [];
+  if (session.distance_km != null) parts.push(formatKm(session.distance_km));
+  parts.push(formatDuration(session.duration_min));
+  if (session.zone) parts.push(session.zone);
   const body = el('div', { class: 'row-body' }, [
     el('span', { class: 'row-title', text: session.title }),
-    muted([formatKm(session.distance_km), ' · ', formatDuration(session.duration_min), session.zone ? ` · ${session.zone}` : ''].join('')),
+    muted(parts.join(' · ')),
   ]);
   return navRow([left, body, el('span', { class: 'row-chev', text: '›' })], `#/session/${session.id}`);
 }
