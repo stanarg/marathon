@@ -21,7 +21,8 @@
   --danger: #FF6E6E;          /* coral-red */
   --radius: 20px;
   --header-h: 48px;
-  --card-gap: 32px;           /* vertical space between stacked cards */
+  --card-gap: 16px;           /* vertical space between stacked cards */
+  --section-gap: 28px;        /* larger gap a section divider (h2 card) floats in */
 
   /* — helpers (not part of the fixed inventory) — */
   --accent-2: #8A7CFF;        /* violet companion — only inside gradients/glows */
@@ -194,6 +195,8 @@ body::before {
 /* Real spacing between stacked cards. Views wrap their cards in a <div>, so the
    .view flex `gap` never reaches them — space adjacent cards directly instead. */
 .view .card + .card { margin-top: var(--card-gap); }
+/* A section-anchor card (the one carrying the divider) gets a bit more room above it. */
+.view .card + .card:has(h2) { margin-top: var(--section-gap); }
 
 /* Recessed sub-panel: sits inside/among cards, reads as a well (no ambient lift). */
 .card.sub {
@@ -225,7 +228,7 @@ body::before {
 }
 .view > * > .card:has(h2):not(:first-child)::before,
 .view > .card:has(h2):not(:first-child)::before {
-  top: calc(-0.5 * var(--card-gap) - 1px); /* centered in the gap above */
+  top: calc(-0.5 * var(--section-gap) - 1px); /* centered in the section gap above */
   height: 3px;
 }
 
