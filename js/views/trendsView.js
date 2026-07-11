@@ -70,6 +70,19 @@ function renderCheckpointPanel(ctx) {
       list.append(el('div', { class: `crit ${cls}` }, [el('span', { class: 'crit-icon', text: icon }), el('span', { text: c.detail })]));
     }
   }
+  // Margin tick — shown only once every criterion is satisfied. Ticking it promotes a clean
+  // pass to EXCEED (revise to 4:35); same manual-tick UX as the criteria above.
+  if (r.outcome === 'pass' || r.outcome === 'exceed') {
+    const on = r.outcome === 'exceed';
+    const box = el('input', {
+      type: 'checkbox', class: 'check', checked: on ? '' : null,
+      onChange: (e) => { ctx.setCheckpointManual({ marginOk: e.target.checked }); ctx.refresh(); },
+    });
+    list.append(el('label', { class: `check-row${on ? ' checked' : ''}` }, [
+      box,
+      el('div', { class: 'row-body' }, [el('span', { class: 'row-title', text: 'Beat the targets comfortably — gas left in the tank?' })]),
+    ]));
+  }
   children.push(list);
 
   const o = OUTCOME[r.outcome];
@@ -98,7 +111,7 @@ export function render(ctx) {
   const mutedColor = cssVar('--muted');
 
   const wrap = el('div', {});
-  wrap.append(card([h(2, 'Trends')]));
+  wrap.append(card([h(2, 'Trends'), muted('Weekly volume, readiness, weight, and the Week-7 checkpoint.')]));
 
   // Weekly planned-vs-done km
   const comp = allWeeksCompliance(workoutPlan, ctx.sessionLogs());

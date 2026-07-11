@@ -4,7 +4,7 @@
 
 import { el, card, badge, h, muted, kv, navRow, button } from '../components/ui.js';
 import { formatKm, formatDuration, formatKcal, formatGrams, humanizeId, formatWindow, formatFluidRangeL } from '../logic/formatters.js';
-import { dayName, compare } from '../logic/dateUtil.js';
+import { dayName, compare, diffDays } from '../logic/dateUtil.js';
 
 const DAYTYPE_KIND = {
   race: 'badge-danger', carb_load: 'badge-warn', quality: 'badge-warn',
@@ -85,6 +85,8 @@ function renderCheckInForm(ctx, existing) {
   const rhr = el('input', { type: 'number', inputmode: 'numeric', min: '30', max: '120', class: 'field-input', placeholder: 'e.g. 51', value: existing && existing.rhr != null ? existing.rhr : null });
   const sleep = el('input', { type: 'number', inputmode: 'decimal', step: '0.5', min: '0', max: '16', class: 'field-input', placeholder: 'e.g. 7.5', value: existing && existing.sleepHours != null ? existing.sleepHours : null });
   const hrv = el('input', { type: 'number', inputmode: 'numeric', min: '0', max: '300', class: 'field-input', placeholder: 'optional', value: existing && existing.hrvMs != null ? existing.hrvMs : null });
+  const existingWeight = ctx.weighins()[date];
+  const weight = el('input', { type: 'number', inputmode: 'decimal', step: '0.1', min: '40', max: '200', class: 'field-input', placeholder: 'e.g. 90.3', value: existingWeight != null ? existingWeight : null });
   const err = el('p', { class: 'field-error', hidden: true });
 
   const save = button('Save check-in', () => {
@@ -95,6 +97,8 @@ function renderCheckInForm(ctx, existing) {
       return;
     }
     ctx.saveCheckin({ date, rhr: r, sleepHours: parseNum(sleep.value), hrvMs: parseNum(hrv.value) });
+    const w = parseNum(weight.value);
+    if (w != null) ctx.saveWeighIn(date, w);
     editingCheckin = false;
     ctx.refresh();
   });
@@ -111,6 +115,7 @@ function renderCheckInForm(ctx, existing) {
       field('Resting HR (bpm)', rhr, 'required'),
       field('Sleep (hours)', sleep, 'optional'),
       field('HRV (ms)', hrv, 'optional'),
+      field('Weight (kg)', weight, 'optional — plan weighs Sundays, pre-long-run'),
     ]),
     err,
     el('div', { class: 'form-actions' }, [save, secondary]),
@@ -160,10 +165,12 @@ function renderReadinessCard(ctx, dp) {
   }
 
   // Recorded metrics
+  const weight = ctx.weighins()[date];
   children.push(kv([
     ['RHR', checkin.rhr != null ? `${checkin.rhr} bpm` : '—'],
     ['Sleep', checkin.sleepHours != null ? `${checkin.sleepHours} h` : '—'],
     ['HRV', checkin.hrvMs != null ? `${checkin.hrvMs} ms` : '—'],
+    ['Weight', weight != null ? `${weight} kg` : '—'],
   ]));
 
   if (v.status === 'flagged') {
@@ -248,35 +255,65 @@ function renderBackupNag(ctx) {
   ], 'banner banner-warning');
 }
 
-// --- Sunday weigh-in nudge (§1) --------------------------------------------
-function renderWeighInNudge(ctx) {
-  const date = ctx.today();
-  if (dayName(date) !== 'Sun' || ctx.weighins()[date] != null) return null;
-  const input = el('input', { type: 'number', inputmode: 'decimal', step: '0.1', min: '40', max: '200', class: 'field-input', placeholder: 'e.g. 90.3' });
-  const save = button('Save weigh-in', () => {
-    const kg = parseNum(input.value);
-    if (kg == null) return;
-    ctx.saveWeighIn(date, kg);
-    ctx.refresh();
-  });
+// --- Headlines for states outside a normal training day (§1) ---------------
+// The app is live before the block starts, on race day, and after the race — each
+// gets a headline card so Today never reads as a meaningless rest day.
+function nextSessionAfter(workoutPlan, date) {
+  let best = null;
+  for (const wk of workoutPlan.weeks) {
+    for (const s of wk.sessions) {
+      if (s.date > date && (!best || s.date < best.date)) best = s;
+    }
+  }
+  return best;
+}
+
+function renderPrePlanCard(date, workoutPlan) {
+  const start = workoutPlan.start_date;
+  const days = diffDays(start, date);
   return card([
-    el('div', { class: 'card-head' }, [h(3, 'Sunday weigh-in'), badge('today', '')]),
-    muted('Pre-long-run weight (kg).'),
-    el('label', { class: 'field' }, [el('span', { class: 'field-label', text: 'Weight (kg)' }), input]),
-    el('div', { class: 'form-actions' }, [save]),
+    el('div', { class: 'card-head' }, [h(3, 'Plan starts soon'), badge(days > 0 ? `in ${days}d` : 'today', '')]),
+    muted(`Your 10-week block starts ${dayName(start)} ${start}. Race day is ${dayName(workoutPlan.race.date)} ${workoutPlan.race.date}. You can log check-ins and weight now — the plan below fills in once it starts.`),
+    navRow([el('span', { class: 'row-title', text: 'Preview the training plan' }), el('span', { class: 'row-chev', text: '›' })], '#/plan'),
   ]);
 }
 
+function renderPostRaceCard(workoutPlan) {
+  return card([
+    el('div', { class: 'card-head' }, [h(3, 'Race complete'), badge('done', 'badge-ok')]),
+    muted(`You finished the ${workoutPlan.race.name} — nice work. Recovery now: easy movement, refuel, and rest. No sessions are scheduled after race day.`),
+    navRow([el('span', { class: 'row-title', text: 'Review your trends' }), el('span', { class: 'row-chev', text: '›' })], '#/trends'),
+  ]);
+}
+
+function renderRaceDayCard(dp, workoutPlan) {
+  const rm = (dp.raceTimeline && dp.raceTimeline.race_morning) || {};
+  return card([
+    el('div', { class: 'card-head' }, [h(3, workoutPlan.race.name), badge('RACE DAY', 'badge-danger')]),
+    muted(`Today's the day. Wake ${rm.wake || ''} · breakfast ${rm.breakfast ? rm.breakfast.time : ''}. Trust the taper, run your plan, fuel every walk break.`),
+    navRow([el('span', { class: 'row-title', text: 'Open the race-day timeline' }), el('span', { class: 'row-chev', text: '›' })], '#/fuel'),
+  ], 'banner banner-critical');
+}
+
 export function render(ctx) {
+  const { workoutPlan } = ctx.plans;
   const date = ctx.today();
   const clock = ctx.clock();
   const dp = ctx.dayPlan(date);
   const checkin = ctx.checkins()[date];
+  const isRaceDay = !!dp.raceTimeline;
+  const beforePlan = compare(date, workoutPlan.start_date) < 0;
+  const afterRace = compare(date, workoutPlan.race.date) > 0;
   const wrap = el('div', {});
 
   // First-boot install intro (§6), shown until installed/dismissed.
   const intro = renderInstallIntro(ctx);
   if (intro) wrap.append(intro);
+
+  // Headline for the out-of-block states (§1).
+  if (beforePlan) wrap.append(renderPrePlanCard(date, workoutPlan));
+  else if (afterRace) wrap.append(renderPostRaceCard(workoutPlan));
+  else if (isRaceDay) wrap.append(renderRaceDayCard(dp, workoutPlan));
 
   // Check-in card until completed for today; then the readiness card.
   if (!checkin || editingCheckin) wrap.append(renderCheckInForm(ctx, checkin));
@@ -287,11 +324,11 @@ export function render(ctx) {
   const soreness = renderSorenessPrompt(ctx);
   if (soreness) wrap.append(soreness);
 
-  // --- Sunday backup nag (§6) + weigh-in nudge (§1) ----------------------
-  const backupNag = renderBackupNag(ctx);
-  if (backupNag) wrap.append(backupNag);
-  const weighNudge = renderWeighInNudge(ctx);
-  if (weighNudge) wrap.append(weighNudge);
+  // --- Sunday backup nag (§6) — but never on race morning ----------------
+  if (!isRaceDay) {
+    const backupNag = renderBackupNag(ctx);
+    if (backupNag) wrap.append(backupNag);
+  }
 
   // --- Day summary --------------------------------------------------------
   wrap.append(card([
@@ -311,7 +348,18 @@ export function render(ctx) {
     for (const s of dp.sessions) sc.append(sessionRow(s));
     wrap.append(sc);
   } else {
-    wrap.append(card([h(3, "Today's session"), muted('Rest day — no session scheduled.')], 'sub'));
+    const restCard = card([h(3, "Today's session"), muted('Rest day — no session scheduled.')], 'sub');
+    const next = nextSessionAfter(workoutPlan, date);
+    if (next) {
+      restCard.append(navRow([
+        el('div', { class: 'row-body' }, [
+          el('span', { class: 'row-window', text: `Next · ${dayName(next.date)} ${next.date}` }),
+          el('span', { class: 'row-title', text: next.title }),
+        ]),
+        el('span', { class: 'row-chev', text: '›' }),
+      ], `#/session/${next.id}`));
+    }
+    wrap.append(restCard);
   }
 
   // --- Fuel (next meal by clock) -----------------------------------------

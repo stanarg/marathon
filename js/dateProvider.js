@@ -41,6 +41,9 @@ export function createDateProvider({ fixedNow } = {}) {
     /** The BA civil date ("YYYY-MM-DD") of any instant (ISO string or Date), or
      *  null if the value isn't a parseable instant (e.g. from a hand-edited backup). */
     dateOf(instant) {
+      // Guard null/undefined explicitly: `new Date(null)` is the Unix epoch (a VALID
+      // date), so it would slip past the isNaN check and render as 1969-12-31.
+      if (instant == null) return null;
       const d = new Date(instant);
       return Number.isNaN(d.getTime()) ? null : dateFmt.format(d);
     },

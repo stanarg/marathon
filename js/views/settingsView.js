@@ -64,7 +64,7 @@ export function render(ctx) {
   const status = ctx.storageStatus();
   const wrap = el('div', {});
 
-  wrap.append(card([h(2, 'Settings')]));
+  wrap.append(card([h(2, 'Settings'), muted('Backup, restore, and app info.')]));
 
   // --- Backup / restore ---------------------------------------------------
   const backup = card([

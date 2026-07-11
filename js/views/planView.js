@@ -32,7 +32,7 @@ export function renderWeeks(ctx) {
       el('span', { class: 'row-title', text: `Week ${wk.index}${isCurrent ? ' · now' : ''}` }),
       muted(`${wk.start_date} → ${wk.end_date} · ${formatKm(wk.target_run_km)} target`),
     ]);
-    const meta = el('div', { class: 'row-lead' }, [
+    const meta = el('div', { class: 'row-tail' }, [
       badge(humanizeId(wk.phase), PHASE_KIND[wk.phase] || ''),
       el('span', { class: 'row-window', text: `${c.completedCount}/${c.plannedCount} · ${c.pct}%` }),
     ]);

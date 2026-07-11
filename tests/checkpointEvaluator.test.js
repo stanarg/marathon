@@ -49,3 +49,19 @@ test('not triggered before the checkpoint run is logged', () => {
   assert.equal(r.triggered, false);
   assert.equal(r.outcome, 'insufficient_data');
 });
+
+test('clean pass + margin tick → exceed / "revise to 4:35"', () => {
+  const logs = { w07s06: { sessionId: 'w07s06', status: 'completed', actualDistanceKm: 23, avgHR: 148, painScore: 0 } };
+  const r = evaluate(logs, {}, workoutPlan, { ...manualAllOk, marginOk: true });
+  assert.equal(r.outcome, 'exceed');
+  assert.match(r.outcomeText, /4:35/);
+});
+
+test('margin tick only promotes a clean pass — never a fail or a partial', () => {
+  // a failing criterion stays fail even with marginOk
+  const failLogs = { w07s06: { sessionId: 'w07s06', status: 'completed', actualDistanceKm: 20, avgHR: 148 } };
+  assert.equal(evaluate(failLogs, {}, workoutPlan, { ...manualAllOk, marginOk: true }).outcome, 'fail');
+  // a clean pass without marginOk stays pass
+  const passLogs = { w07s06: { sessionId: 'w07s06', status: 'completed', actualDistanceKm: 23, avgHR: 148, painScore: 0 } };
+  assert.equal(evaluate(passLogs, {}, workoutPlan, manualAllOk).outcome, 'pass');
+});

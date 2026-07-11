@@ -57,6 +57,11 @@ export function evaluate(logs, checkins, workoutPlan, manual = {}) {
   else if (criteria.some((c) => c.passed === null)) outcome = 'insufficient_data';
   else outcome = 'pass';
 
+  // "Exceed" (all criteria comfortably → revise to 4:35) is promoted from a clean pass
+  // only when the athlete confirms they beat the targets with margin to spare. marginOk
+  // is a MANUAL flag, not a criterion, so it never blocks a pass or forces insufficient_data.
+  if (outcome === 'pass' && manual.marginOk === true) outcome = 'exceed';
+
   const outcomes = cp.outcomes || {};
   const outcomeText = outcome === 'insufficient_data' ? null : outcomes[outcome] || null;
 

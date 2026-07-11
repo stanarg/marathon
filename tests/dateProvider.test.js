@@ -24,4 +24,6 @@ test('dateOf() returns null for an unparseable value', () => {
   assert.equal(dp.dateOf('n/a-corrupt'), null);
   assert.equal(dp.dateOf(''), null);
   assert.equal(dp.dateOf(undefined), null);
+  // null must read as null, NOT the Unix epoch (new Date(null) === 1970-01-01).
+  assert.equal(dp.dateOf(null), null);
 });
