@@ -1,13 +1,99 @@
-// settingsView.js — backup export/import, reset, storage status, install, about (§6).
+// settingsView.js — backup export/import, reset, storage status, install, about (§6),
+// and the Foods editor (calibrate meal-macro values / add custom foods, Fuel §6).
 
-import { el, card, h, muted, kv, button, field } from '../components/ui.js';
+import { el, card, badge, h, muted, kv, button, field, parseNum } from '../components/ui.js';
+import { SEED_FOODS } from '../logic/foods.js';
+
+const SEED_IDS = new Set(SEED_FOODS.map((f) => f.id));
 
 // View-local UI state, reset on navigation.
 let resetArmed = false;
 let pendingImport = null; // { text, exportedAt }
 let importError = null;
+let expandedFood = null; // food id whose calibration row is open
+let addingFood = false;
 if (typeof window !== 'undefined') {
-  window.addEventListener('hashchange', () => { resetArmed = false; pendingImport = null; importError = null; });
+  window.addEventListener('hashchange', () => {
+    resetArmed = false; pendingImport = null; importError = null; expandedFood = null; addingFood = false;
+  });
+}
+
+// --- Foods editor (calibrate to match the athlete's tracker; add custom foods) ---
+function foodBasis(food) {
+  return food.unit === 'g' || food.unit === 'ml' ? `per 100 ${food.unit}` : `per ${food.unit}`;
+}
+
+function renderFoodRow(ctx, food) {
+  const open = expandedFood === food.id;
+  const overridden = !!ctx.foodOverrides()[food.id];
+  const custom = !SEED_IDS.has(food.id);
+  const head = el('button', {
+    class: 'meal-head', type: 'button', 'aria-expanded': open ? 'true' : 'false',
+    onClick: () => { expandedFood = open ? null : food.id; ctx.refresh(); },
+  }, [
+    el('div', { class: 'row-body' }, [
+      el('span', { class: 'row-title', text: food.name }),
+      muted(`${food.carb} C · ${food.protein} P · ${food.fat} F  (${foodBasis(food)})`),
+    ]),
+    overridden ? badge(custom ? 'custom' : 'edited', '') : null,
+    el('span', { class: 'meal-chev', text: '›', 'aria-hidden': 'true' }),
+  ]);
+  if (!open) return el('div', { class: 'meal' }, [head]);
+
+  const num = (val) => el('input', { type: 'number', inputmode: 'decimal', min: '0', step: 'any', class: 'field-input', value: val != null ? val : null });
+  const c = num(food.carb); const p = num(food.protein); const f = num(food.fat);
+  const detail = el('div', { class: 'meal-detail' }, [
+    muted(`Macros ${foodBasis(food)} — set these to match your tracker.`),
+    el('div', { class: 'macro-grid' }, [field('Carbs (g)', c), field('Protein (g)', p), field('Fat (g)', f)]),
+    el('div', { class: 'form-actions' }, [
+      button('Save', () => {
+        ctx.saveFood(food.id, { carb: parseNum(c.value) ?? 0, protein: parseNum(p.value) ?? 0, fat: parseNum(f.value) ?? 0 });
+        expandedFood = null; ctx.refresh();
+      }, 'btn-sm'),
+      overridden ? button(custom ? 'Remove food' : 'Reset to default', () => { ctx.removeFood(food.id); expandedFood = null; ctx.refresh(); }, 'btn-ghost btn-sm') : null,
+    ].filter(Boolean)),
+  ]);
+  return el('div', { class: 'meal' }, [head, detail]);
+}
+
+function renderAddFood(ctx) {
+  if (!addingFood) {
+    return el('button', { class: 'link-btn', type: 'button', text: '+ Add a custom food', onClick: () => { addingFood = true; ctx.refresh(); } });
+  }
+  const name = el('input', { type: 'text', class: 'field-input', placeholder: 'e.g. Protein shake' });
+  const unit = el('select', { class: 'field-input' }, [
+    el('option', { value: 'g' }, ['per 100 g']),
+    el('option', { value: 'ml' }, ['per 100 ml']),
+    el('option', { value: 'item' }, ['per item']),
+  ]);
+  const num = (ph) => el('input', { type: 'number', inputmode: 'decimal', min: '0', step: 'any', class: 'field-input', placeholder: ph });
+  const c = num('0'); const p = num('0'); const f = num('0');
+  return card([
+    field('Name', name),
+    field('Measured', unit),
+    el('div', { class: 'macro-grid' }, [field('Carbs (g)', c), field('Protein (g)', p), field('Fat (g)', f)]),
+    el('div', { class: 'form-actions' }, [
+      button('Add food', () => {
+        const nm = (name.value || '').trim();
+        if (!nm) return;
+        const id = 'custom_' + nm.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+        const u = unit.value;
+        ctx.saveFood(id, { name: nm, unit: u === 'item' ? 'item' : u, ref: u === 'item' ? 1 : 100, carb: parseNum(c.value) ?? 0, protein: parseNum(p.value) ?? 0, fat: parseNum(f.value) ?? 0 });
+        addingFood = false; ctx.refresh();
+      }, 'btn-sm'),
+      button('Cancel', () => { addingFood = false; ctx.refresh(); }, 'btn-ghost btn-sm'),
+    ]),
+  ], 'sub');
+}
+
+function renderFoodsCard(ctx) {
+  const c = card([
+    h(3, 'Foods'),
+    muted('Used to compute your meal macros on the Fuel screen. Tap a food to calibrate it to your tracker; edits apply everywhere that food is used.'),
+  ]);
+  for (const food of ctx.foods()) c.append(renderFoodRow(ctx, food));
+  c.append(renderAddFood(ctx));
+  return c;
 }
 
 function downloadBackup(ctx) {
@@ -108,6 +194,9 @@ export function render(ctx) {
     ]));
   }
   wrap.append(reset);
+
+  // --- Foods (calibrate meal-macro values / add custom foods) ------------
+  wrap.append(renderFoodsCard(ctx));
 
   // --- Install ------------------------------------------------------------
   wrap.append(card([

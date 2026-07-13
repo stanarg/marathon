@@ -14,6 +14,7 @@ import { evaluate as evaluateCheckpoint } from './logic/checkpointEvaluator.js';
 import { createRouter } from './router.js';
 import { el, card, clear, h, muted, link } from './components/ui.js';
 import { isValidISODate, diffDays } from './logic/dateUtil.js';
+import { foodList, foodMap } from './logic/foods.js';
 
 import * as todayView from './views/todayView.js';
 import * as planView from './views/planView.js';
@@ -161,16 +162,33 @@ function buildContext(plans, store, dp) {
     store.set('checklist', all);
   };
 
-  // Meal suggestions (Fuel §6): the athlete's go-to meal per meal key,
-  // { [key]: text }. Config (not a training log): backed up, but NOT wiped by
-  // resetUserData. Clearing a suggestion reverts that meal to the plan's default.
+  // Meal suggestions (Fuel §6): the athlete's go-to meal per meal key, structured as
+  // { [key]: [{ foodId, amount }] }. Config (not a training log): backed up, but NOT
+  // wiped by resetUserData. Saving [] (or nothing) reverts the meal to the plan hint.
   ctx.mealSuggestions = () => store.get('mealSuggestions') || {};
-  ctx.saveMealSuggestion = (key, text) => {
+  ctx.saveMeal = (key, entries) => {
     const all = { ...ctx.mealSuggestions() };
-    const t = (text || '').trim();
-    if (t) all[key] = t;
+    if (entries && entries.length) all[key] = entries;
     else delete all[key];
     store.set('mealSuggestions', all);
+  };
+
+  // Food database (Fuel §6): seed foods (foods.js) merged with the athlete's overrides
+  // and custom foods in `foods`. Editing a food writes an override so meal macros can be
+  // calibrated to the athlete's own tracker; removing reverts a seed food or deletes a
+  // custom one. Config: backed up, NOT wiped by resetUserData.
+  ctx.foodOverrides = () => store.get('foods') || {};
+  ctx.foods = () => foodList(ctx.foodOverrides());
+  ctx.foodMap = () => foodMap(ctx.foodOverrides());
+  ctx.saveFood = (id, patch) => {
+    const all = { ...ctx.foodOverrides() };
+    all[id] = { ...(all[id] || {}), ...patch };
+    store.set('foods', all);
+  };
+  ctx.removeFood = (id) => {
+    const all = { ...ctx.foodOverrides() };
+    delete all[id];
+    store.set('foods', all);
   };
 
   // Backup / restore / reset / storage (§6, §7).

@@ -512,9 +512,39 @@ a.row:active { background: var(--surface-2); border-radius: 12px; }
   transition: transform 0.18s ease;
 }
 .meal-head[aria-expanded="true"] .meal-chev { transform: rotate(90deg); }
-.meal-detail { padding: 2px 4px 14px 90px; }
-.meal-suggestion { margin: 0 0 6px; white-space: pre-line; }
-.meal-suggestion.is-default { color: var(--muted); }
+.meal-detail { padding: 2px 4px 14px 12px; }
+
+/* Built-meal view: item list + computed macros vs target */
+.meal-items { margin: 4px 0 8px; padding-left: 18px; }
+.meal-items li { margin: 3px 0; }
+.meal-total { margin: 8px 0 4px; }
+.meal-total-macros { margin: 0 0 4px; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.meal-target-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.meal-target-row .muted { margin: 0; }
+
+/* Meal editor: food + amount rows */
+.meal-rows { display: flex; flex-direction: column; gap: 8px; margin: 6px 0; }
+.meal-edit-row { display: flex; align-items: center; gap: 8px; }
+.meal-food { flex: 1 1 auto; min-width: 0; }
+.meal-amt { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+.meal-amt-input { width: 66px; text-align: right; }
+.meal-unit { color: var(--muted); font-size: 0.8rem; min-width: 24px; }
+.meal-del {
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 1rem;
+  padding: 10px 8px;
+  line-height: 1;
+  flex: 0 0 auto;
+  -webkit-tap-highlight-color: transparent;
+}
+/* C/P/F calibration inputs (meal editor add-food + Settings → Foods) */
+.macro-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+.macro-grid .field-input { padding: 12px 8px; }
 
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
 .btn {

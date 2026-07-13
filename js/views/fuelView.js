@@ -4,14 +4,15 @@
 
 import { el, card, badge, h, muted, kv, button, field, parseNum } from '../components/ui.js';
 import { formatKcal, formatGrams, humanizeId, formatFluidRangeL } from '../logic/formatters.js';
-import { suggestionFor } from '../logic/mealSuggestions.js';
+import { mealKey, exampleHint } from '../logic/mealSuggestions.js';
+import { mealTotals, targetStatus } from '../logic/foods.js';
 
 // View-local UI state. Like todayView's edit flag, these survive ctx.refresh()
 // (a same-route re-render) but reset on real navigation (a hashchange):
 //   fuelDate     — the picked date
-//   expandedMeal — the meal key whose suggestion is open (accordion: one at a time)
+//   expandedMeal — the meal key whose meal is open (accordion: one at a time)
 //   editingMeal  — the meal key currently in edit mode (or null)
-//   mealDraft    — in-progress edit text, so an incidental re-render can't wipe it
+//   mealDraft    — in-progress list of { foodId, amount } rows, so a re-render can't wipe it
 let fuelDate = null;
 let expandedMeal = null;
 let editingMeal = null;
@@ -20,6 +21,16 @@ if (typeof window !== 'undefined') {
   window.addEventListener('hashchange', () => {
     fuelDate = null; expandedMeal = null; editingMeal = null; mealDraft = null;
   });
+}
+
+const STATUS_KIND = { short: 'badge-warn', on: 'badge-ok', over: '' };
+
+// "100 g · Rolled oats" for weighed foods, "3 × Egg" for counted ones.
+function formatEntry(food, amount) {
+  if (!food) return `${amount} × (unknown food)`;
+  return food.unit === 'g' || food.unit === 'ml'
+    ? `${amount} ${food.unit} · ${food.name}`
+    : `${amount} × ${food.name}`;
 }
 
 // Keep the default date inside the picker's own [start, race] bounds so the widget
@@ -88,10 +99,10 @@ function renderRaceWeek(ctx) {
   return wrap;
 }
 
-// One meal in the timeline: a tappable header (time · label · macros) that expands
-// to the athlete's go-to suggestion, editable in place.
+// One meal in the timeline: a tappable header (time · label · target) that expands to
+// the athlete's go-to meal built from foods, its computed macros vs the target, editable.
 function renderMeal(ctx, meal) {
-  const { key, text, custom } = suggestionFor(meal, ctx.mealSuggestions());
+  const key = mealKey(meal.label);
   const open = expandedMeal === key;
 
   const head = el('button', {
@@ -105,51 +116,98 @@ function renderMeal(ctx, meal) {
     el('div', { class: 'row-lead' }, [el('span', { class: 'row-window', text: meal.time })]),
     el('div', { class: 'row-body' }, [
       el('span', { class: 'row-title', text: meal.label }),
-      muted(`${formatGrams(meal.carb_g)} carbs · ${formatGrams(meal.protein_g)} protein`),
+      muted(`target ${formatGrams(meal.carb_g)} carbs · ${formatGrams(meal.protein_g)} protein`),
     ]),
     el('span', { class: 'meal-chev', text: '›', 'aria-hidden': 'true' }),
   ]);
 
   const parts = [head];
-  if (open) parts.push(renderMealDetail(ctx, meal, key, text, custom));
+  if (open) parts.push(editingMeal === key ? renderMealEditor(ctx, meal, key) : renderMealView(ctx, meal, key));
   return el('div', { class: 'meal' }, parts);
 }
 
-function renderMealDetail(ctx, meal, key, text, custom) {
+// --- View mode: the built meal + its macros vs the target -------------------
+function renderMealView(ctx, meal, key) {
   const detail = el('div', { class: 'meal-detail' });
+  const entries = ctx.mealSuggestions()[key] || [];
+  const byId = ctx.foodMap();
 
-  if (editingMeal === key) {
-    const ta = el('textarea', {
-      class: 'field-input', rows: '4',
-      placeholder: 'e.g. 100 g oats, 3 eggs, 1 banana, 300 ml milk',
-      onInput: (e) => { mealDraft = e.target.value; },
-    }, [mealDraft != null ? mealDraft : text]);
-    detail.append(
-      field('Your meal', ta, 'One item per line or comma-separated — whatever suits you.'),
-      el('div', { class: 'form-actions' }, [
-        button('Save', () => {
-          ctx.saveMealSuggestion(key, ta.value);
-          editingMeal = null; mealDraft = null;
-          ctx.refresh();
-        }, 'btn-sm'),
-        button('Cancel', () => { editingMeal = null; mealDraft = null; ctx.refresh(); }, 'btn-ghost btn-sm'),
-      ]),
-    );
-    return detail;
-  }
-
-  if (text) {
-    detail.append(el('p', { class: `meal-suggestion${custom ? '' : ' is-default'}`, text }));
-    if (!custom) detail.append(muted('Starting point from your plan — tap edit to make it your own.'));
+  if (entries.length) {
+    const list = el('ul', { class: 'meal-items' });
+    for (const e of entries) list.append(el('li', { text: formatEntry(byId[e.foodId], e.amount) }));
+    detail.append(list);
+    detail.append(mealTotalLine(entries, byId, meal));
   } else {
-    detail.append(muted('No go-to set for this meal yet.'));
+    const hint = exampleHint(meal);
+    detail.append(muted(hint ? `Plan suggests: ${hint}` : 'No meal built yet.'));
   }
   if (meal.notes) detail.append(el('p', { class: 'note', text: meal.notes }));
   detail.append(el('button', {
     class: 'link-btn', type: 'button',
-    text: text ? 'Edit meal' : 'Add your meal',
-    onClick: () => { editingMeal = key; mealDraft = null; ctx.refresh(); },
+    text: entries.length ? 'Edit meal' : 'Build this meal',
+    onClick: () => { editingMeal = key; mealDraft = entries.map((e) => ({ ...e })); ctx.refresh(); },
   }));
+  return detail;
+}
+
+// The computed total + target comparison (carbs is the athlete's focus).
+function mealTotalLine(entries, byId, meal) {
+  const t = mealTotals(entries, byId);
+  const box = el('div', { class: 'meal-total' });
+  box.append(el('p', { class: 'meal-total-macros', text:
+    `${Math.round(t.carb)} g carbs · ${Math.round(t.protein)} g protein · ${Math.round(t.fat)} g fat · ${t.kcal} kcal` }));
+  const cs = targetStatus(t.carb, meal.carb_g);
+  const label = cs.status === 'on' ? 'on target'
+    : cs.status === 'short' ? `${Math.abs(cs.delta)} g short`
+      : `${Math.abs(cs.delta)} g over`;
+  box.append(el('div', { class: 'meal-target-row' }, [
+    muted(`vs target ${formatGrams(meal.carb_g)} carbs`),
+    badge(label, STATUS_KIND[cs.status]),
+  ]));
+  return box;
+}
+
+// --- Edit mode: food + amount rows with a live running total ----------------
+function renderMealEditor(ctx, meal, key) {
+  const detail = el('div', { class: 'meal-detail' });
+  const foods = ctx.foods();
+  const byId = ctx.foodMap();
+  if (!mealDraft) mealDraft = [];
+
+  const totalBox = el('div', { class: 'meal-total' });
+  const paint = () => { totalBox.replaceChildren(mealTotalLine(mealDraft.filter((e) => e.foodId && parseNum(e.amount) > 0), byId, meal)); };
+
+  const rows = el('div', { class: 'meal-rows' });
+  mealDraft.forEach((entry, i) => {
+    const sel = el('select', { class: 'field-input meal-food', onChange: (e) => { mealDraft[i].foodId = e.target.value; unitLabel.textContent = unitOf(e.target.value); paint(); } }, [
+      el('option', { value: '', selected: entry.foodId ? null : '' }, ['— choose food —']),
+      ...foods.map((f) => el('option', { value: f.id, selected: f.id === entry.foodId ? '' : null }, [f.name])),
+    ]);
+    const amt = el('input', { type: 'number', inputmode: 'decimal', min: '0', step: 'any', class: 'field-input meal-amt-input', value: entry.amount != null ? entry.amount : null, placeholder: '0',
+      onInput: (e) => { mealDraft[i].amount = e.target.value; paint(); } });
+    const unitOf = (id) => { const f = byId[id]; return f ? f.unit : ''; };
+    const unitLabel = el('span', { class: 'meal-unit', text: unitOf(entry.foodId) });
+    const del = el('button', { class: 'meal-del', type: 'button', 'aria-label': 'Remove food', text: '✕',
+      onClick: () => { mealDraft.splice(i, 1); ctx.refresh(); } });
+    rows.append(el('div', { class: 'meal-edit-row' }, [sel, el('div', { class: 'meal-amt' }, [amt, unitLabel]), del]));
+  });
+
+  detail.append(
+    rows,
+    el('button', { class: 'link-btn', type: 'button', text: '+ Add food', onClick: () => { mealDraft.push({ foodId: '', amount: '' }); ctx.refresh(); } }),
+    totalBox,
+    el('div', { class: 'form-actions' }, [
+      button('Save', () => {
+        const clean = mealDraft.filter((e) => e.foodId && parseNum(e.amount) > 0).map((e) => ({ foodId: e.foodId, amount: parseNum(e.amount) }));
+        ctx.saveMeal(key, clean);
+        editingMeal = null; mealDraft = null;
+        ctx.refresh();
+      }, 'btn-sm'),
+      button('Cancel', () => { editingMeal = null; mealDraft = null; ctx.refresh(); }, 'btn-ghost btn-sm'),
+    ]),
+    muted('Foods off vs your tracker? Calibrate them in Settings → Foods.'),
+  );
+  paint();
   return detail;
 }
 
@@ -221,7 +279,7 @@ export function render(ctx) {
   if (dp.meals.length) {
     const meals = card([
       h(3, `Meals · ${dp.mealTemplateId ? humanizeId(dp.mealTemplateId) : '—'}`),
-      muted('Tap a meal for your go-to — set once, shown every day.'),
+      muted('Tap a meal to build it from foods and check its macros against the target.'),
     ]);
     for (const meal of dp.meals) meals.append(renderMeal(ctx, meal));
     wrap.append(meals);

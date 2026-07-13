@@ -22,6 +22,7 @@ export const SECTIONS = [
   'decisions',
   'checklist',
   'mealSuggestions',
+  'foods',
 ];
 
 const DEFAULTS = {
@@ -33,7 +34,8 @@ const DEFAULTS = {
   checkpoint: null,
   decisions: {},
   checklist: {},
-  mealSuggestions: {}, // { [mealKey]: "athlete's go-to meal text" } — Fuel §6
+  mealSuggestions: {}, // { [mealKey]: [{ foodId, amount }] } — the athlete's go-to meal, Fuel §6
+  foods: {}, // { [foodId]: {carb,protein,fat,name?,unit?,ref?} } — overrides/custom foods, Fuel §6
 };
 
 /** A minimal in-memory backend (localStorage-shaped) — used by tests and as a

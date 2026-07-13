@@ -17,7 +17,8 @@ function seededStore() {
   store.set('weighins', { '2026-07-13': 90.3 });
   store.set('decisions', { notes: 'feeling good' });
   store.set('checklist', { bib_pickup: true, 'carbload_2026-09-18': true }); // M5 section
-  store.set('mealSuggestions', { breakfast: '100 g oats, 3 eggs, 1 banana, 300 ml milk' });
+  store.set('mealSuggestions', { breakfast: [{ foodId: 'oats', amount: 100 }, { foodId: 'egg', amount: 3 }] });
+  store.set('foods', { oats: { carb: 58 } }); // a calibration override
   return store;
 }
 
