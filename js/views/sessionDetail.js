@@ -6,6 +6,7 @@ import { el, card, badge, h, muted, kv, link, button, field, parseNum } from '..
 import { formatKm, formatDuration, humanizeId, formatWindow, formatGrams } from '../logic/formatters.js';
 import { dayName } from '../logic/dateUtil.js';
 import { strengthDetail } from '../logic/strengthProgram.js';
+import { formatZone, allZones } from '../logic/hrZones.js';
 
 const PAIN_SITES = [
   { value: '', label: 'None' },
@@ -118,8 +119,21 @@ function renderStrengthWorkout(session) {
   ]);
 }
 
+// "Your HR zones" reference — all five of Stan's zones with bpm, shown on run/cardio
+// session detail so he can see the whole ladder, not just today's target.
+function renderZonesReference(hrModel) {
+  const zones = allZones(hrModel);
+  if (!zones.length) return null;
+  return card([
+    el('div', { class: 'card-head' }, [h(3, 'Your HR zones'), badge(`HRmax ${hrModel.hr_max} · rest ${hrModel.hr_rest}`, '')]),
+    kv(zones.map((z) => [`${z.id} · ${z.name}`, `${z.minBpm}–${z.maxBpm} bpm`])),
+    muted('Computed from your HRmax and resting HR (Karvonen). Same numbers your watch zones use.'),
+  ], 'sub');
+}
+
 export function render(ctx, id) {
   const { workoutPlan } = ctx.plans;
+  const hrModel = workoutPlan.hr_model;
   const found = findSession(workoutPlan, id);
   if (!found) return card([h(2, 'Session not found'), link('← Back to plan', '#/plan')], 'diagnostic');
 
@@ -141,13 +155,19 @@ export function render(ctx, id) {
     kv([
       ['Distance', s.distance_km != null ? formatKm(s.distance_km) : null],
       ['Duration', formatDuration(s.duration_min)],
-      ['Zone', s.zone],
+      ['Zone', formatZone(s.zone, hrModel) || s.zone],
       ['HR cap', s.hr_cap_bpm != null ? `${s.hr_cap_bpm} bpm` : null],
       ['Run/walk', s.run_walk],
     ]),
     s.structure ? muted(s.structure) : null,
     s.notes ? el('p', { class: 'note', text: s.notes }) : null,
   ].filter(Boolean)));
+
+  // HR-zone reference — only for sessions that train to a zone (runs, cross, race).
+  if (s.zone) {
+    const zonesRef = renderZonesReference(hrModel);
+    if (zonesRef) wrap.append(zonesRef);
+  }
 
   // Strength workout (only for strength sessions) — the actual gym regimen (§7).
   const strengthCard = renderStrengthWorkout(s);

@@ -6,36 +6,42 @@
 //
 // Seed values are reasonable starting points, NOT gospel — food data varies by brand
 // and database. They are editable in-app (stored as overrides) so the athlete can
-// calibrate any food to match their own tracker (MacroFactor).
+// calibrate any food to match their own tracker.
 
 // Each food carries macros for `ref` of its `unit`; a meal entry's `amount` is in `unit`.
 //   unit 'g' / 'ml' → ref 100 (macros per 100 g / 100 ml)
 //   unit is the food itself (egg, banana, slice, tbsp, …) → ref 1 (macros per piece)
+// Values are USDA-aligned generic references (researched Jul 2026) — good starting
+// points. Brand/product entries vary, so calibrate any food in Settings → Foods to
+// match the athlete's own tracker for an exact match.
 export const SEED_FOODS = [
-  { id: 'oats', name: 'Rolled oats (dry)', unit: 'g', ref: 100, carb: 60, protein: 13, fat: 7 },
-  { id: 'milk', name: 'Milk (semi-skim)', unit: 'ml', ref: 100, carb: 4.8, protein: 3.5, fat: 1.6 },
-  { id: 'egg', name: 'Egg', unit: 'egg', ref: 1, carb: 0.4, protein: 6.3, fat: 5 },
+  { id: 'oats', name: 'Rolled oats (dry)', unit: 'g', ref: 100, carb: 68, protein: 13, fat: 7 },
+  { id: 'milk', name: 'Milk (semi-skim)', unit: 'ml', ref: 100, carb: 4.8, protein: 3.4, fat: 2 },
+  { id: 'egg', name: 'Egg', unit: 'egg', ref: 1, carb: 0.6, protein: 6.3, fat: 4.8 },
   { id: 'banana', name: 'Banana', unit: 'banana', ref: 1, carb: 27, protein: 1.3, fat: 0.4 },
-  { id: 'white_bread', name: 'White bread', unit: 'slice', ref: 1, carb: 15, protein: 3, fat: 1 },
-  { id: 'jam', name: 'Jam', unit: 'tbsp', ref: 1, carb: 13, protein: 0.1, fat: 0 },
+  { id: 'white_bread', name: 'White bread', unit: 'slice', ref: 1, carb: 14, protein: 2.5, fat: 0.9 },
+  { id: 'jam', name: 'Jam', unit: 'tbsp', ref: 1, carb: 14, protein: 0.1, fat: 0 },
   { id: 'honey', name: 'Honey', unit: 'tbsp', ref: 1, carb: 17, protein: 0.1, fat: 0 },
-  { id: 'dulce_leche', name: 'Dulce de leche', unit: 'tbsp', ref: 1, carb: 11, protein: 1.4, fat: 1.4 },
+  { id: 'dulce_leche', name: 'Dulce de leche', unit: 'tbsp', ref: 1, carb: 10.5, protein: 1.3, fat: 1.4 },
   { id: 'rice_cooked', name: 'White rice (cooked)', unit: 'g', ref: 100, carb: 28, protein: 2.7, fat: 0.3 },
-  { id: 'pasta_cooked', name: 'Pasta (cooked)', unit: 'g', ref: 100, carb: 31, protein: 5, fat: 1 },
-  { id: 'potato_boiled', name: 'Potatoes (boiled)', unit: 'g', ref: 100, carb: 17, protein: 2, fat: 0.1 },
-  { id: 'beef', name: 'Beef (cooked, lean)', unit: 'g', ref: 100, carb: 0, protein: 26, fat: 10 },
+  { id: 'pasta_cooked', name: 'Pasta (cooked)', unit: 'g', ref: 100, carb: 31, protein: 5.8, fat: 0.9 },
+  { id: 'gnocchi_cooked', name: 'Gnocchi / ñoquis (cooked)', unit: 'g', ref: 100, carb: 30, protein: 3, fat: 1 },
+  { id: 'potato_boiled', name: 'Potatoes (boiled)', unit: 'g', ref: 100, carb: 20, protein: 1.9, fat: 0.1 },
+  { id: 'beef', name: 'Beef (cooked, lean)', unit: 'g', ref: 100, carb: 0, protein: 26, fat: 8 },
+  { id: 'milanesa', name: 'Milanesa (breaded beef)', unit: 'g', ref: 100, carb: 14, protein: 20, fat: 13 },
   { id: 'chicken', name: 'Chicken breast (cooked)', unit: 'g', ref: 100, carb: 0, protein: 31, fat: 3.6 },
   { id: 'veg', name: 'Mixed vegetables', unit: 'g', ref: 100, carb: 7, protein: 2.6, fat: 0.3 },
-  { id: 'yogurt', name: 'Greek yogurt', unit: 'g', ref: 100, carb: 4, protein: 10, fat: 5 },
-  { id: 'quark', name: 'Quark (low-fat)', unit: 'g', ref: 100, carb: 3.5, protein: 12, fat: 0.3 },
-  { id: 'nuts', name: 'Mixed nuts', unit: 'g', ref: 100, carb: 20, protein: 15, fat: 55 },
+  { id: 'yogurt', name: 'Greek yogurt (plain)', unit: 'g', ref: 100, carb: 4, protein: 10, fat: 2 },
+  { id: 'quark', name: 'Quark (low-fat)', unit: 'g', ref: 100, carb: 4, protein: 12, fat: 0.2 },
+  { id: 'whey', name: 'Whey protein', unit: 'scoop', ref: 1, carb: 3, protein: 24, fat: 1.5 },
+  { id: 'nuts', name: 'Mixed nuts', unit: 'g', ref: 100, carb: 21, protein: 20, fat: 54 },
   { id: 'apple', name: 'Apple', unit: 'apple', ref: 1, carb: 25, protein: 0.5, fat: 0.3 },
-  { id: 'ham', name: 'Ham', unit: 'slice', ref: 1, carb: 0.5, protein: 5, fat: 2 },
-  { id: 'cheese', name: 'Cheese', unit: 'slice', ref: 1, carb: 0.3, protein: 5, fat: 6.6 },
+  { id: 'ham', name: 'Ham', unit: 'slice', ref: 1, carb: 0.6, protein: 7, fat: 1.4 },
+  { id: 'cheese', name: 'Cheese', unit: 'slice', ref: 1, carb: 0.8, protein: 7, fat: 9 },
   { id: 'orange_juice', name: 'Orange juice', unit: 'ml', ref: 100, carb: 10, protein: 0.7, fat: 0.2 },
   { id: 'sports_drink', name: 'Sports drink', unit: 'ml', ref: 100, carb: 6, protein: 0, fat: 0 },
   { id: 'soup', name: 'Vegetable soup', unit: 'ml', ref: 100, carb: 5, protein: 1.5, fat: 1 },
-  { id: 'medialuna', name: 'Medialuna', unit: 'piece', ref: 1, carb: 20, protein: 4, fat: 10 },
+  { id: 'medialuna', name: 'Medialuna', unit: 'piece', ref: 1, carb: 20, protein: 3, fat: 7 },
 ];
 
 const MACRO_KEYS = ['carb', 'protein', 'fat'];

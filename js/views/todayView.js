@@ -5,6 +5,7 @@
 import { el, card, badge, h, muted, kv, navRow, button, field, parseNum } from '../components/ui.js';
 import { formatKm, formatDuration, formatKcal, formatGrams, humanizeId, formatWindow, formatFluidRangeL } from '../logic/formatters.js';
 import { dayName, compare, diffDays } from '../logic/dateUtil.js';
+import { formatZoneBpm } from '../logic/hrZones.js';
 
 const DAYTYPE_KIND = {
   race: 'badge-danger', carb_load: 'badge-warn', quality: 'badge-warn',
@@ -29,14 +30,14 @@ const STATUS_BADGE = {
   converted_cross: { kind: 'badge-warn', label: 'converted' },
 };
 
-function sessionRow(session, log) {
+function sessionRow(session, log, hrModel) {
   const left = el('div', { class: 'row-lead' }, [
     el('span', { class: 'row-window', text: `${formatWindow(session.window)} ${session.start_time}` }),
   ]);
   const parts = [];
   if (session.distance_km != null) parts.push(formatKm(session.distance_km));
   parts.push(formatDuration(session.duration_min));
-  if (session.zone) parts.push(session.zone);
+  if (session.zone) parts.push(formatZoneBpm(session.zone, hrModel) || session.zone);
   const status = log && STATUS_BADGE[log.status];
   const body = el('div', { class: 'row-body' }, [
     el('span', { class: 'row-title', text: session.title }),
@@ -360,7 +361,7 @@ export function render(ctx) {
   if (dp.sessions.length) {
     const logs = ctx.sessionLogs();
     const sc = card([h(3, dp.sessions.length > 1 ? "Today's sessions" : "Today's session")]);
-    for (const s of dp.sessions) sc.append(sessionRow(s, logs[s.id]));
+    for (const s of dp.sessions) sc.append(sessionRow(s, logs[s.id], workoutPlan.hr_model));
     wrap.append(sc);
   } else {
     const restCard = card([h(3, "Today's session"), muted('Rest day — no session scheduled.')], 'sub');
