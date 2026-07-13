@@ -4,11 +4,22 @@
 
 import { el, card, badge, h, muted, kv, button, field, parseNum } from '../components/ui.js';
 import { formatKcal, formatGrams, humanizeId, formatFluidRangeL } from '../logic/formatters.js';
+import { suggestionFor } from '../logic/mealSuggestions.js';
 
-// Selected date is view-local; reset to "today" on navigation (like todayView's edit flag).
+// View-local UI state. Like todayView's edit flag, these survive ctx.refresh()
+// (a same-route re-render) but reset on real navigation (a hashchange):
+//   fuelDate     — the picked date
+//   expandedMeal — the meal key whose suggestion is open (accordion: one at a time)
+//   editingMeal  — the meal key currently in edit mode (or null)
+//   mealDraft    — in-progress edit text, so an incidental re-render can't wipe it
 let fuelDate = null;
+let expandedMeal = null;
+let editingMeal = null;
+let mealDraft = null;
 if (typeof window !== 'undefined') {
-  window.addEventListener('hashchange', () => { fuelDate = null; });
+  window.addEventListener('hashchange', () => {
+    fuelDate = null; expandedMeal = null; editingMeal = null; mealDraft = null;
+  });
 }
 
 // Keep the default date inside the picker's own [start, race] bounds so the widget
@@ -77,6 +88,71 @@ function renderRaceWeek(ctx) {
   return wrap;
 }
 
+// One meal in the timeline: a tappable header (time · label · macros) that expands
+// to the athlete's go-to suggestion, editable in place.
+function renderMeal(ctx, meal) {
+  const { key, text, custom } = suggestionFor(meal, ctx.mealSuggestions());
+  const open = expandedMeal === key;
+
+  const head = el('button', {
+    class: 'meal-head', type: 'button', 'aria-expanded': open ? 'true' : 'false',
+    onClick: () => {
+      expandedMeal = expandedMeal === key ? null : key;
+      editingMeal = null; mealDraft = null;
+      ctx.refresh();
+    },
+  }, [
+    el('div', { class: 'row-lead' }, [el('span', { class: 'row-window', text: meal.time })]),
+    el('div', { class: 'row-body' }, [
+      el('span', { class: 'row-title', text: meal.label }),
+      muted(`${formatGrams(meal.carb_g)} carbs · ${formatGrams(meal.protein_g)} protein`),
+    ]),
+    el('span', { class: 'meal-chev', text: '›', 'aria-hidden': 'true' }),
+  ]);
+
+  const parts = [head];
+  if (open) parts.push(renderMealDetail(ctx, meal, key, text, custom));
+  return el('div', { class: 'meal' }, parts);
+}
+
+function renderMealDetail(ctx, meal, key, text, custom) {
+  const detail = el('div', { class: 'meal-detail' });
+
+  if (editingMeal === key) {
+    const ta = el('textarea', {
+      class: 'field-input', rows: '4',
+      placeholder: 'e.g. 100 g oats, 3 eggs, 1 banana, 300 ml milk',
+      onInput: (e) => { mealDraft = e.target.value; },
+    }, [mealDraft != null ? mealDraft : text]);
+    detail.append(
+      field('Your meal', ta, 'One item per line or comma-separated — whatever suits you.'),
+      el('div', { class: 'form-actions' }, [
+        button('Save', () => {
+          ctx.saveMealSuggestion(key, ta.value);
+          editingMeal = null; mealDraft = null;
+          ctx.refresh();
+        }, 'btn-sm'),
+        button('Cancel', () => { editingMeal = null; mealDraft = null; ctx.refresh(); }, 'btn-ghost btn-sm'),
+      ]),
+    );
+    return detail;
+  }
+
+  if (text) {
+    detail.append(el('p', { class: `meal-suggestion${custom ? '' : ' is-default'}`, text }));
+    if (!custom) detail.append(muted('Starting point from your plan — tap edit to make it your own.'));
+  } else {
+    detail.append(muted('No go-to set for this meal yet.'));
+  }
+  if (meal.notes) detail.append(el('p', { class: 'note', text: meal.notes }));
+  detail.append(el('button', {
+    class: 'link-btn', type: 'button',
+    text: text ? 'Edit meal' : 'Add your meal',
+    onClick: () => { editingMeal = key; mealDraft = null; ctx.refresh(); },
+  }));
+  return detail;
+}
+
 function renderWeightCard(ctx, date) {
   const existing = ctx.weighins()[date];
   const input = el('input', { type: 'number', inputmode: 'decimal', step: '0.1', min: '40', max: '200', class: 'field-input', value: existing != null ? existing : null, placeholder: 'e.g. 90.3' });
@@ -141,20 +217,13 @@ export function render(ctx) {
     wrap.append(card([h(3, 'Day targets'), muted('Race day — governed by the race plan above, not daily macros.')]));
   }
 
-  // Meal timeline
+  // Meal timeline — each meal expands to show (and edit) your go-to suggestion.
   if (dp.meals.length) {
-    const meals = card([h(3, `Meals · ${dp.mealTemplateId ? humanizeId(dp.mealTemplateId) : '—'}`)]);
-    for (const meal of dp.meals) {
-      meals.append(el('div', { class: 'row' }, [
-        el('div', { class: 'row-lead' }, [el('span', { class: 'row-window', text: meal.time })]),
-        el('div', { class: 'row-body' }, [
-          el('span', { class: 'row-title', text: meal.label }),
-          muted(`${formatGrams(meal.carb_g)} carbs · ${formatGrams(meal.protein_g)} protein`),
-          meal.examples && meal.examples.length ? muted(meal.examples.join(', ')) : null,
-          meal.notes ? el('p', { class: 'note', text: meal.notes }) : null,
-        ].filter(Boolean)),
-      ]));
-    }
+    const meals = card([
+      h(3, `Meals · ${dp.mealTemplateId ? humanizeId(dp.mealTemplateId) : '—'}`),
+      muted('Tap a meal for your go-to — set once, shown every day.'),
+    ]);
+    for (const meal of dp.meals) meals.append(renderMeal(ctx, meal));
     wrap.append(meals);
   }
 

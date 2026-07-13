@@ -3,7 +3,7 @@
 //
 // All URLs are relative to the sw scope so it works at username.github.io/ba42/.
 
-const CACHE = 'ba42-v11';
+const CACHE = 'ba42-v12';
 
 const ASSETS = [
   'index.html',
@@ -27,6 +27,7 @@ const ASSETS = [
   'js/logic/checkpointEvaluator.js',
   'js/logic/compliance.js',
   'js/logic/strengthProgram.js',
+  'js/logic/mealSuggestions.js',
   // views
   'js/views/todayView.js',
   'js/views/planView.js',

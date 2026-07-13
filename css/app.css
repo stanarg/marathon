@@ -486,6 +486,36 @@ a.row:active { background: var(--surface-2); border-radius: 12px; }
 }
 .next-meal { margin-top: 4px; }
 
+/* ── Fuel meal accordion (tap a meal → its go-to suggestion, editable) ──────── */
+.card .meal + .meal { border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+.meal-head {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 4px;
+  color: var(--text);
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+.meal-head:active { background: var(--surface-2); border-radius: 12px; }
+.meal-chev {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 1.3rem;
+  line-height: 1;
+  transition: transform 0.18s ease;
+}
+.meal-head[aria-expanded="true"] .meal-chev { transform: rotate(90deg); }
+.meal-detail { padding: 2px 4px 14px 90px; }
+.meal-suggestion { margin: 0 0 6px; white-space: pre-line; }
+.meal-suggestion.is-default { color: var(--muted); }
+
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
 .btn {
   -webkit-appearance: none;
@@ -768,7 +798,7 @@ input.check {
 @media (prefers-reduced-motion: reduce) {
   .drawer, .scrim,
   .menu-icon, .menu-icon::before, .menu-icon::after,
-  .meter-fill, .btn, a.row, .drawer .tab, .field-input {
+  .meter-fill, .btn, a.row, .drawer .tab, .field-input, .meal-chev {
     transition: none;
   }
 }

@@ -161,6 +161,18 @@ function buildContext(plans, store, dp) {
     store.set('checklist', all);
   };
 
+  // Meal suggestions (Fuel §6): the athlete's go-to meal per meal key,
+  // { [key]: text }. Config (not a training log): backed up, but NOT wiped by
+  // resetUserData. Clearing a suggestion reverts that meal to the plan's default.
+  ctx.mealSuggestions = () => store.get('mealSuggestions') || {};
+  ctx.saveMealSuggestion = (key, text) => {
+    const all = { ...ctx.mealSuggestions() };
+    const t = (text || '').trim();
+    if (t) all[key] = t;
+    else delete all[key];
+    store.set('mealSuggestions', all);
+  };
+
   // Backup / restore / reset / storage (§6, §7).
   ctx.exportBackup = () => store.exportBlob();
   ctx.markBackedUp = () => store.markBackedUp();

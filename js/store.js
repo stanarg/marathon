@@ -21,6 +21,7 @@ export const SECTIONS = [
   'checkpoint',
   'decisions',
   'checklist',
+  'mealSuggestions',
 ];
 
 const DEFAULTS = {
@@ -32,6 +33,7 @@ const DEFAULTS = {
   checkpoint: null,
   decisions: {},
   checklist: {},
+  mealSuggestions: {}, // { [mealKey]: "athlete's go-to meal text" } — Fuel §6
 };
 
 /** A minimal in-memory backend (localStorage-shaped) — used by tests and as a
