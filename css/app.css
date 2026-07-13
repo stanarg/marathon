@@ -522,26 +522,37 @@ a.row:active { background: var(--surface-2); border-radius: 12px; }
 .meal-target-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .meal-target-row .muted { margin: 0; }
 
-/* Meal editor: food + amount rows */
-.meal-rows { display: flex; flex-direction: column; gap: 8px; margin: 6px 0; }
-.meal-edit-row { display: flex; align-items: center; gap: 8px; }
-.meal-food { flex: 1 1 auto; min-width: 0; }
-.meal-amt { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
-.meal-amt-input { width: 66px; text-align: right; }
-.meal-unit { color: var(--muted); font-size: 0.8rem; min-width: 24px; }
+/* Meal editor: each food is a two-line row — dropdown (+ remove) on top, amount +
+   unit below — so the food name always has full width and never clips on a phone. */
+.meal-rows { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+.meal-edit-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 6px;
+  padding: 10px 0;
+}
+.meal-edit-row + .meal-edit-row { border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+.meal-food { grid-column: 1; grid-row: 1; min-width: 0; width: 100%; }
 .meal-del {
+  grid-column: 2;
+  grid-row: 1;
   -webkit-appearance: none;
   appearance: none;
   background: none;
   border: 0;
   cursor: pointer;
   color: var(--muted);
-  font-size: 1rem;
-  padding: 10px 8px;
+  font-size: 1.05rem;
+  padding: 8px 6px;
   line-height: 1;
-  flex: 0 0 auto;
   -webkit-tap-highlight-color: transparent;
 }
+.meal-amt { grid-column: 1 / -1; grid-row: 2; display: flex; align-items: center; gap: 8px; }
+/* element+class beats the generic `.field-input { width:100% }`, whatever the order */
+input.meal-amt-input { width: 110px; text-align: right; }
+.meal-unit { color: var(--muted); font-size: 0.9rem; }
 /* C/P/F calibration inputs (meal editor add-food + Settings → Foods) */
 .macro-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
 .macro-grid .field-input { padding: 12px 8px; }
